@@ -1,7 +1,7 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "ttl_days": 7,
-  "note": "Subscribers ($50/mo) get a 7-day slot here. `featured_from` + ttl_days determines visibility.",
+  "note": "Subscribers ($50/mo) get a 7-day slot here. Anchors (pinned:true) stay forever. Dynamic subscribers come from the adclaw_spotlight Supabase table and are merged at render-time.",
   "items": [
     {
       "id": "nervix",
