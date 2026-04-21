@@ -1120,6 +1120,19 @@ textarea{min-height:80px;resize:vertical}
 let supa = null, session = null;
 const state = { projects: [], library: [], lastDraft: null, lastProjectId: null };
 
+// ── Generation config ──
+const GEN_CONFIG = {
+  ollamaUrl: 'https://sims-testimonials-rent-innocent.trycloudflare.com',
+  ollamaModel: 'qwen2.5-coder:7b',
+  ollamaTimeout: 30000,     // 30s before we bail on Ollama
+  backendTimeout: 60000,    // 60s before we bail on backend API
+  slowWarningMs: 15000      // show "taking longer" after 15s
+};
+
+function updateOllamaUrl(url){
+  if(url) GEN_CONFIG.ollamaUrl = url.replace(/\/+$/, '');
+}
+
 async function loadAuthConfig(){
   const r = await fetch('/api/advertiser/auth/config');
   return r.ok ? r.json() : null;
@@ -1564,38 +1577,84 @@ async function submitProject(e){
 }
 
 // ============================================================
-// CARD GENERATION — backend-first, client-fallback, 6 animated stages.
-// The stages advance on a fixed 10s timeline regardless of backend speed
-// so the user sees a consistent, cinematic progression.
+// CARD GENERATION — 3-tier pipeline with progressive messaging
+// Tier 1: Mac Studio Ollama via tunnel (speed, ~5s)
+// Tier 2: Backend API (semeclaw.fly.dev)
+// Tier 3: Client-side template fallback (instant, zero deps)
 // ============================================================
-async function generate(projectId){
-  state.lastProjectId = projectId;
-  showTab('generate');                  // jump to the inline loading pane
-  resetGenerationUI();
-  // Kick off backend + animated stages in parallel. We gate the final
-  // preview on BOTH: backend result or fallback, AND stage animation done.
-  const project = state.projects.find(p => p.id === projectId) || {};
-  const backendPromise = fetchGeneratedCard(projectId).catch(err => ({ error: err }));
-  await runGenerationStages(project);   // ~10s, resolves when all ticks are done
-  const result = await backendPromise;
-  if(result && result.draft){
-    state.lastDraft = result.draft;
-  } else {
-    // Client-side fallback: compose a reasonable draft from the user's own inputs.
-    state.lastDraft = composeDraftClientSide(project);
-    console.warn('generate-card backend failed; using client-side fallback', result && result.error);
+
+// Build the Ollama prompt from project data
+function buildOllamaPrompt(p){
+  const name = p.name || 'Project';
+  const desc = (p.description || '').trim();
+  const goal = (p.ad_goal || '').trim();
+  const audience = (p.target_audience || '').trim();
+  const url = p.github_url || '';
+  return `You are an ad copywriter. Generate a JSON ad card for this project.
+Project name: ${name}
+Description: ${desc || 'N/A'}
+Ad goal: ${goal || 'N/A'}
+Target audience: ${audience || 'N/A'}
+Website: ${url || 'N/A'}
+
+Return ONLY valid JSON with these exact fields, no markdown fences:
+{"headline":"string","badge":"string","body":"string (max 180 chars)","cta_label":"string","cta_url":"string","accent_color":"#hex","hook":"string","hook_highlight":"string","tagline":"string"}`;
+}
+
+// Tier 1: Call local Ollama via tunnel
+async function fetchOllamaDraft(project){
+  const url = GEN_CONFIG.ollamaUrl;
+  if(!url) throw new Error('Ollama URL not configured');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GEN_CONFIG.ollamaTimeout);
+  try{
+    const r = await fetch(url + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: GEN_CONFIG.ollamaModel,
+        messages: [{ role: 'user', content: buildOllamaPrompt(project) }],
+        stream: false,
+        options: { temperature: 0.4 }
+      }),
+      signal: controller.signal
+    });
+    if(!r.ok) throw new Error('Ollama HTTP ' + r.status);
+    const d = await r.json();
+    const raw = (d.message && d.message.content) || '';
+    if(!raw) throw new Error('Ollama returned empty content');
+    // Strip markdown fences if the model wraps them
+    const jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const draft = JSON.parse(jsonStr);
+    // Validate required fields exist
+    if(!draft.headline) throw new Error('Ollama draft missing headline');
+    draft._source = 'ollama';
+    return draft;
+  }finally{
+    clearTimeout(timer);
   }
-  openGeneratedPreview(state.lastDraft, project);
 }
 
-async function fetchGeneratedCard(projectId){
-  const r = await fetch(`/api/advertiser/${advId()}/projects/${projectId}/generate-card`, { method:'POST' });
-  if(!r.ok) throw new Error('generation failed (' + r.status + ')');
-  const d = await r.json();
-  if(!d.draft) throw new Error(d.error || 'no draft in response');
-  return d;
+// Tier 2: Call backend API
+async function fetchBackendDraft(projectId){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GEN_CONFIG.backendTimeout);
+  try{
+    const r = await fetch(`/api/advertiser/${advId()}/projects/${projectId}/generate-card`, {
+      method: 'POST',
+      signal: controller.signal
+    });
+    if(!r.ok) throw new Error('Backend HTTP ' + r.status);
+    const d = await r.json();
+    if(!d.draft) throw new Error(d.error || 'no draft in response');
+    d.draft._source = 'backend';
+    return d.draft;
+  }finally{
+    clearTimeout(timer);
+  }
 }
 
+// Tier 3: Client-side template (always works, zero network)
 function composeDraftClientSide(p){
   const name = p.name || 'Project';
   const goal = (p.ad_goal || '').trim();
@@ -1605,7 +1664,7 @@ function composeDraftClientSide(p){
   const hook = /agent|ai/i.test(name + ' ' + desc)
     ? `Own an AI tool? *${name}* can put it to work.`
     : `Looking for what *${name}* does?`;
-  const body = desc.length > 200 ? desc.slice(0, 197) + '…' : desc || 'Built for teams who need real results, fast.';
+  const body = desc.length > 200 ? desc.slice(0, 197) + '...' : desc || 'Built for teams who need real results, fast.';
   return {
     headline,
     badge: 'Featured',
@@ -1616,8 +1675,43 @@ function composeDraftClientSide(p){
     hook,
     hook_highlight: name,
     tagline: audience ? `For ${audience}` : '',
-    _fallback: true
+    _source: 'template'
   };
+}
+
+// Run the 3-tier pipeline with AbortController cascading
+async function runGenerationPipeline(project, projectId){
+  // Tier 1: Ollama (speed primary)
+  try{
+    const draft = await fetchOllamaDraft(project);
+    console.log('[gen] Tier 1 (Ollama) succeeded');
+    return draft;
+  }catch(err){
+    console.warn('[gen] Tier 1 (Ollama) failed:', err.message);
+  }
+
+  // Show "taking longer" message before trying tier 2
+  showSlowMessage();
+
+  // Tier 2: Backend API
+  try{
+    const draft = await fetchBackendDraft(projectId);
+    console.log('[gen] Tier 2 (Backend) succeeded');
+    return draft;
+  }catch(err){
+    console.warn('[gen] Tier 2 (Backend) failed:', err.message);
+  }
+
+  // Tier 3: Client-side template (always succeeds)
+  console.log('[gen] Tier 3 (Template) fallback');
+  return composeDraftClientSide(project);
+}
+
+function showSlowMessage(){
+  const sub = document.getElementById('gen-sub');
+  if(sub) sub.textContent = 'Taking a bit longer than usual — switching to backup generator...';
+  const title = document.getElementById('gen-title');
+  if(title) title.textContent = 'Still composing your card...';
 }
 
 function resetGenerationUI(){
@@ -1626,19 +1720,20 @@ function resetGenerationUI(){
   if(prog) prog.dataset.pct = '0';
   const title = document.getElementById('gen-title');
   const sub = document.getElementById('gen-sub');
-  if(title) title.textContent = 'Composing your card…';
+  if(title) title.textContent = 'Composing your card...';
   if(sub) sub.textContent = 'We read your inputs, fetch your repo + site, and build a 25-second animated ad.';
 }
 
-// Sequential stages: "doing" → "done" with staggered timing summing to ~10s.
+// Sequential stages: "doing" -> "done" with staggered timing.
+// Stages advance independently; the pipeline resolves when real data arrives.
 async function runGenerationStages(project){
   const stages = [
-    { label: 'Reading your project inputs',  ms: 900 },
-    { label: project.github_url ? 'Analysing GitHub repo'    : 'Skipping GitHub (no repo)', ms: 1800 },
-    { label: project.github_url ? 'Crawling your website'    : 'Crawling any linked site',  ms: 1700 },
-    { label: 'Extracting key phrases',       ms: 1500 },
-    { label: 'Composing hook + headline',    ms: 1800 },
-    { label: 'Rendering animated card',      ms: 1300 }
+    { label: 'Reading your project inputs',  ms: 800 },
+    { label: project.github_url ? 'Analysing GitHub repo'    : 'Skipping GitHub (no repo)', ms: 1500 },
+    { label: project.github_url ? 'Crawling your website'    : 'Crawling any linked site',  ms: 1400 },
+    { label: 'Extracting key phrases',       ms: 1200 },
+    { label: 'Composing hook + headline',    ms: 1500 },
+    { label: 'Rendering animated card',      ms: 1100 }
   ];
   const steps = Array.from(document.querySelectorAll('#gen-steps .gen-step'));
   const prog  = document.getElementById('gen-progress');
@@ -1651,12 +1746,30 @@ async function runGenerationStages(project){
     el.classList.remove('doing');
     el.classList.add('done');
     const pct = Math.round(((i+1) / total) * 100);
-    // Snap to one of our CSS width buckets.
     const bucket = [0,17,34,50,67,84,100].reduce((a,b) => Math.abs(b - pct) < Math.abs(a - pct) ? b : a, 0);
     if(prog) prog.dataset.pct = String(bucket);
   }
 }
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function generate(projectId){
+  state.lastProjectId = projectId;
+  showTab('generate');
+  resetGenerationUI();
+  const project = state.projects.find(p => p.id === projectId) || {};
+
+  // Start slow-warning timer
+  let slowTimer = setTimeout(showSlowMessage, GEN_CONFIG.slowWarningMs);
+
+  // Pipeline + stages race in parallel
+  const [draft] = await Promise.all([
+    runGenerationPipeline(project, projectId).finally(() => clearTimeout(slowTimer)),
+    runGenerationStages(project)
+  ]);
+
+  state.lastDraft = draft;
+  openGeneratedPreview(draft, project);
+}
 
 function openGeneratedPreview(draft, project){
   // Reuse the Details inline pane to show the fresh card with full animation + actions.
@@ -1683,7 +1796,7 @@ function openGeneratedPreview(draft, project){
       <button type="button" class="btn btn-primary" onclick="saveGenerated()">💾 Save to Library</button>
       <button type="button" class="btn" onclick="generate('${project.id}')">↻ Regenerate</button>
       <button type="button" class="btn btn-ghost" onclick="showTab('projects')">Cancel</button>
-      ${draft._fallback ? '<span class="det-pill" style="border-color:rgba(245,158,11,.4);color:var(--amber)">Fallback draft</span>' : ''}
+      ${draft._source === 'template' ? '<span class="det-pill" style="border-color:rgba(245,158,11,.4);color:var(--amber)">Fallback draft</span>' : ''}
     `;
   }
 }
