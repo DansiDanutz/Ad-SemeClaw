@@ -1943,9 +1943,6 @@ async function generate(projectId){
 function openGeneratedPreview(draft, project){
   // Reuse the Details inline pane to show the fresh card with full animation + actions.
   const item = {
-function openGeneratedPreview(draft, project){
-  // Reuse the Details inline pane to show the fresh card with full animation + actions.
-  const item = {
     id: 'draft-' + (project.id || Date.now()),
     name: draft.headline || project.name || 'New card',
     tagline: draft.tagline || '',
