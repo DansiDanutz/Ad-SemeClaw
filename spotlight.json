@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ttl_days": 7,
+  "note": "Subscribers ($50/mo) get a 7-day slot here. `featured_from` + ttl_days determines visibility.",
+  "items": [
+    {
+      "id": "nervix",
+      "name": "Nervix.ai",
+      "tagline": "The AI Agent Marketplace",
+      "description": "Hire, trust, and pay autonomous agents. Escrow-backed, identity-verified, marketplace-native.",
+      "url": "https://nervix.ai",
+      "logo_letter": "N",
+      "logo_font": "display",
+      "gradient_from": "#f59e0b",
+      "gradient_to": "#ec4899",
+      "accent_rgb": "245,158,11",
+      "pinned": true,
+      "featured_from": "2026-04-21T00:00:00Z"
+    }
+  ]
+}
