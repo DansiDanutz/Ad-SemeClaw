@@ -1054,8 +1054,12 @@ textarea{min-height:80px;resize:vertical}
         <input name="github_url" type="url" placeholder="https://github.com/org/repo"/>
       </div>
       <div>
-        <label>Description *</label>
-        <textarea name="description" required placeholder="What does the product do? Who uses it? Why does it matter?"></textarea>
+        <label>Website / landing page</label>
+        <input name="webpage_url" type="url" placeholder="https://yourproduct.com"/>
+      </div>
+      <div>
+        <label>Description <span style="color:var(--text-2);font-size:12px">(optional — auto-generated from GitHub + website if left empty)</span></label>
+        <textarea name="description" placeholder="What does the product do? Who uses it? Why does it matter? Leave blank to let the model infer this from your repo and site."></textarea>
       </div>
       <div>
         <label>Ad goal *</label>
@@ -1494,8 +1498,9 @@ async function loadProjects(){
     list.innerHTML = state.projects.map(p => `
       <div class="proj">
         <h3>${escape(p.name)}</h3>
+        ${p.webpage_url ? `<div class="gh">🌐 ${escape(p.webpage_url)}</div>` : ''}
         ${p.github_url ? `<div class="gh">${escape(p.github_url)}</div>` : ''}
-        <div class="desc">${escape(p.description)}</div>
+        <div class="desc">${escape(p.description) || '<em style="color:var(--text-2)">No description — will be auto-generated from repo + site.</em>'}</div>
         <div class="goal">GOAL · ${escape(p.ad_goal)}</div>
         <div class="proj-actions">
           <button class="btn btn-primary" onclick="generate('${p.id}')">✨ Generate card</button>
@@ -1595,32 +1600,136 @@ async function submitProject(e){
 }
 
 // ============================================================
-// CARD GENERATION — 3-tier pipeline with progressive messaging
-// Tier 1: Mac Studio Ollama via tunnel (speed, ~5s)
-// Tier 2: Backend API (semeclaw.fly.dev)
-// Tier 3: Client-side template fallback (instant, zero deps)
+// ============================================================
+// CARD GENERATION — research-first pipeline with real fetching
+// Stages do actual work: GitHub API → webpage crawl → LLM generation
 // ============================================================
 
-// Build the Ollama prompt from project data
-function buildOllamaPrompt(p){
-  const name = p.name || 'Project';
-  const desc = (p.description || '').trim();
-  const goal = (p.ad_goal || '').trim();
-  const audience = (p.target_audience || '').trim();
-  const url = p.github_url || '';
+function buildOllamaPrompt(project, analysis){
   return `You are an ad copywriter. Generate a JSON ad card for this project.
-Project name: ${name}
-Description: ${desc || 'N/A'}
-Ad goal: ${goal || 'N/A'}
-Target audience: ${audience || 'N/A'}
-Website: ${url || 'N/A'}
+
+PROJECT NAME: ${project.name || 'Project'}
+AD GOAL: ${project.ad_goal || 'N/A'}
+TARGET AUDIENCE: ${project.target_audience || 'N/A'}
+WEBSITE: ${project.webpage_url || 'N/A'}
+GITHUB: ${project.github_url || 'N/A'}
+
+RESEARCH DATA:
+${analysis || 'No research data available.'}
+
+Your task: Write a compelling ad card. The body/description must be a genuine summary of what this project does, based ONLY on the research data above. Do not use generic marketing fluff. Be specific about the problem it solves and who it helps.
 
 Return ONLY valid JSON with these exact fields, no markdown fences:
-{"headline":"string","badge":"string","body":"string (max 180 chars)","cta_label":"string","cta_url":"string","accent_color":"#hex","hook":"string","hook_highlight":"string","tagline":"string"}`;
+{"headline":"string (max 60 chars, catchy)","badge":"string (e.g. New, Featured, AI Tool)","body":"string (max 180 chars, specific summary based on research)","cta_label":"string (e.g. Try it, Learn more, Sign up)","cta_url":"string","accent_color":"#hex (choose a color that fits the brand)","hook":"string (one sentence hook)","hook_highlight":"string (word to bold in hook)","tagline":"string (who it's for)"}`;
 }
 
-// Tier 1: Call local Ollama via tunnel
-async function fetchOllamaDraft(project){
+async function fetchGitHubData(githubUrl){
+  try{
+    const match = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+    if(!match) return null;
+    const [, owner, repo] = match;
+    const cleanRepo = repo.replace(/\.git$/, '').replace(/\/$/, '');
+
+    const metaRes = await fetch(`https://api.github.com/repos/${owner}/${cleanRepo}`);
+    const meta = metaRes.ok ? await metaRes.json() : null;
+
+    let readme = '';
+    const readmeMain = await fetch(`https://raw.githubusercontent.com/${owner}/${cleanRepo}/main/README.md`);
+    if(readmeMain.ok){ readme = await readmeMain.text(); }
+    else {
+      const readmeMaster = await fetch(`https://raw.githubusercontent.com/${owner}/${cleanRepo}/master/README.md`);
+      if(readmeMaster.ok){ readme = await readmeMaster.text(); }
+    }
+
+    return {
+      meta: meta ? {
+        description: meta.description,
+        topics: meta.topics,
+        language: meta.language,
+        stargazers_count: meta.stargazers_count,
+        forks_count: meta.forks_count,
+        html_url: meta.html_url,
+        homepage: meta.homepage,
+      } : null,
+      readme: readme.slice(0, 3000)
+    };
+  }catch(e){
+    console.warn('[gen] GitHub fetch failed:', e.message);
+    return null;
+  }
+}
+
+async function fetchWebpageData(url){
+  try{
+    let html = '';
+    try {
+      const directRes = await fetch(url, { mode: 'cors', signal: AbortSignal.timeout(5000) });
+      if(directRes.ok) html = await directRes.text();
+    } catch(e) { /* CORS blocked, try proxy */ }
+
+    if(!html){
+      const proxyRes = await fetch(
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if(!proxyRes.ok) return null;
+      html = await proxyRes.text();
+    }
+
+    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+
+    const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i)
+                   || html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']description["']/i)
+                   || html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']*)["']/i);
+    const metaDescription = descMatch ? descMatch[1].trim() : '';
+
+    const keywordsMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']*)["']/i);
+    const keywords = keywordsMatch ? keywordsMatch[1].trim() : '';
+
+    const text = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 5000);
+
+    return { title, metaDescription, keywords, text };
+  }catch(e){
+    console.warn('[gen] Webpage fetch failed:', e.message);
+    return null;
+  }
+}
+
+function analyzeSources(project, githubData, webpageData){
+  const parts = [];
+  if(githubData?.meta){
+    const m = githubData.meta;
+    if(m.description) parts.push(`GitHub description: ${m.description}`);
+    if(m.topics?.length) parts.push(`Topics: ${m.topics.join(', ')}`);
+    if(m.language) parts.push(`Primary language: ${m.language}`);
+    if(m.stargazers_count) parts.push(`Stars: ${m.stargazers_count}`);
+    if(m.homepage) parts.push(`Homepage from GitHub: ${m.homepage}`);
+  }
+  if(githubData?.readme){
+    const firstPara = githubData.readme.split('\n\n')[0].replace(/^#+\s*/, '').trim();
+    parts.push(`README: ${firstPara.slice(0, 800)}`);
+  }
+  if(webpageData?.title) parts.push(`Website title: ${webpageData.title}`);
+  if(webpageData?.metaDescription) parts.push(`Website meta description: ${webpageData.metaDescription}`);
+  if(webpageData?.keywords) parts.push(`Website keywords: ${webpageData.keywords}`);
+  if(webpageData?.text){
+    const sentences = webpageData.text.match(/[^.!?]+[.!?]+/g) || [];
+    const excerpt = sentences.slice(0, 3).join(' ').trim();
+    if(excerpt) parts.push(`Website content excerpt: ${excerpt.slice(0, 600)}`);
+  }
+  if(project.ad_goal) parts.push(`Ad goal: ${project.ad_goal}`);
+  if(project.target_audience) parts.push(`Target audience: ${project.target_audience}`);
+  return parts.join('\n\n');
+}
+
+async function fetchOllamaDraft(project, analysis){
   const url = GEN_CONFIG.ollamaUrl;
   if(!url) throw new Error('Ollama URL not configured');
   const controller = new AbortController();
@@ -1631,7 +1740,7 @@ async function fetchOllamaDraft(project){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: GEN_CONFIG.ollamaModel,
-        messages: [{ role: 'user', content: buildOllamaPrompt(project) }],
+        messages: [{ role: 'user', content: buildOllamaPrompt(project, analysis) }],
         stream: false,
         options: { temperature: 0.4 }
       }),
@@ -1641,10 +1750,8 @@ async function fetchOllamaDraft(project){
     const d = await r.json();
     const raw = (d.message && d.message.content) || '';
     if(!raw) throw new Error('Ollama returned empty content');
-    // Strip markdown fences if the model wraps them
     const jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     const draft = JSON.parse(jsonStr);
-    // Validate required fields exist
     if(!draft.headline) throw new Error('Ollama draft missing headline');
     draft._source = 'ollama';
     return draft;
@@ -1653,13 +1760,12 @@ async function fetchOllamaDraft(project){
   }
 }
 
-// Tier 2: Call backend API
 async function fetchBackendDraft(projectId){
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GEN_CONFIG.backendTimeout);
   try{
     const r = await fetch(`/api/advertiser/${advId()}/projects/${projectId}/generate-card`, {
-      method: 'POST',
+      method:'POST',
       signal: controller.signal
     });
     if(!r.ok) throw new Error('Backend HTTP ' + r.status);
@@ -1672,64 +1778,25 @@ async function fetchBackendDraft(projectId){
   }
 }
 
-// Tier 3: Client-side template (always works, zero network)
-function composeDraftClientSide(p){
-  const name = p.name || 'Project';
-  const goal = (p.ad_goal || '').trim();
-  const desc = (p.description || '').trim();
-  const audience = (p.target_audience || '').trim();
-  const headline = name;
-  const hook = /agent|ai/i.test(name + ' ' + desc)
-    ? `Own an AI tool? *${name}* can put it to work.`
-    : `Looking for what *${name}* does?`;
-  const body = desc.length > 200 ? desc.slice(0, 197) + '...' : desc || 'Built for teams who need real results, fast.';
+function composeDraftClientSide(project, analysis){
+  const name = project.name || 'Project';
+  const analysisText = analysis || '';
+  const firstSentence = analysisText.match(/[^.!?]+[.!?]+/)?.[0]?.trim() || '';
+  const body = firstSentence.length > 10 && firstSentence.length <= 200
+    ? firstSentence
+    : (analysisText.slice(0, 197) + '...' || 'Built for teams who need real results, fast.');
   return {
-    headline,
+    headline: name,
     badge: 'Featured',
     body,
-    cta_label: goal ? goal.split(/\s+/).slice(0,3).join(' ') : 'Learn more',
-    cta_url: p.github_url || '',
+    cta_label: 'Learn more',
+    cta_url: project.webpage_url || project.github_url || '#',
     accent_color: '#f59e0b',
-    hook,
+    hook: `Looking for what *${name}* does?`,
     hook_highlight: name,
-    tagline: audience ? `For ${audience}` : '',
+    tagline: project.target_audience ? `For ${project.target_audience}` : '',
     _source: 'template'
   };
-}
-
-// Run the 3-tier pipeline with AbortController cascading
-async function runGenerationPipeline(project, projectId){
-  // Tier 1: Ollama (speed primary)
-  try{
-    const draft = await fetchOllamaDraft(project);
-    console.log('[gen] Tier 1 (Ollama) succeeded');
-    return draft;
-  }catch(err){
-    console.warn('[gen] Tier 1 (Ollama) failed:', err.message);
-  }
-
-  // Show "taking longer" message before trying tier 2
-  showSlowMessage();
-
-  // Tier 2: Backend API
-  try{
-    const draft = await fetchBackendDraft(projectId);
-    console.log('[gen] Tier 2 (Backend) succeeded');
-    return draft;
-  }catch(err){
-    console.warn('[gen] Tier 2 (Backend) failed:', err.message);
-  }
-
-  // Tier 3: Client-side template (always succeeds)
-  console.log('[gen] Tier 3 (Template) fallback');
-  return composeDraftClientSide(project);
-}
-
-function showSlowMessage(){
-  const sub = document.getElementById('gen-sub');
-  if(sub) sub.textContent = 'Taking a bit longer than usual — switching to backup generator...';
-  const title = document.getElementById('gen-title');
-  if(title) title.textContent = 'Still composing your card...';
 }
 
 function resetGenerationUI(){
@@ -1742,53 +1809,73 @@ function resetGenerationUI(){
   if(sub) sub.textContent = 'We read your inputs, fetch your repo + site, and build a 25-second animated ad.';
 }
 
-// Sequential stages: "doing" -> "done" with staggered timing.
-// Stages advance independently; the pipeline resolves when real data arrives.
-async function runGenerationStages(project){
-  const stages = [
-    { label: 'Reading your project inputs',  ms: 800 },
-    { label: project.github_url ? 'Analysing GitHub repo'    : 'Skipping GitHub (no repo)', ms: 1500 },
-    { label: project.github_url ? 'Crawling your website'    : 'Crawling any linked site',  ms: 1400 },
-    { label: 'Extracting key phrases',       ms: 1200 },
-    { label: 'Composing hook + headline',    ms: 1500 },
-    { label: 'Rendering animated card',      ms: 1100 }
-  ];
-  const steps = Array.from(document.querySelectorAll('#gen-steps .gen-step'));
-  const prog  = document.getElementById('gen-progress');
-  const total = steps.length;
-  for(let i = 0; i < total; i++){
-    const el = steps[i];
-    el.querySelector('span + span, span:nth-child(2)').textContent = stages[i].label;
-    el.classList.add('doing');
-    await sleep(stages[i].ms);
-    el.classList.remove('doing');
-    el.classList.add('done');
-    const pct = Math.round(((i+1) / total) * 100);
-    const bucket = [0,17,34,50,67,84,100].reduce((a,b) => Math.abs(b - pct) < Math.abs(a - pct) ? b : a, 0);
-    if(prog) prog.dataset.pct = String(bucket);
-  }
-}
-function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
-
 async function generate(projectId){
   state.lastProjectId = projectId;
   showTab('generate');
   resetGenerationUI();
   const project = state.projects.find(p => p.id === projectId) || {};
 
-  // Start slow-warning timer
-  let slowTimer = setTimeout(showSlowMessage, GEN_CONFIG.slowWarningMs);
+  const steps = Array.from(document.querySelectorAll('#gen-steps .gen-step'));
+  const prog  = document.getElementById('gen-progress');
 
-  // Pipeline + stages race in parallel
-  const [draft] = await Promise.all([
-    runGenerationPipeline(project, projectId).finally(() => clearTimeout(slowTimer)),
-    runGenerationStages(project)
-  ]);
+  async function stage(i, label, workFn){
+    const el = steps[i];
+    if(el) el.querySelector('span + span, span:nth-child(2)').textContent = label;
+    if(el) el.classList.add('doing');
+    const result = await workFn();
+    if(el){ el.classList.remove('doing'); el.classList.add('done'); }
+    const pct = Math.round(((i+1) / steps.length) * 100);
+    const bucket = [0,17,34,50,67,84,100].reduce((a,b) => Math.abs(b - pct) < Math.abs(a - pct) ? b : a, 0);
+    if(prog) prog.dataset.pct = String(bucket);
+    return result;
+  }
 
-  state.lastDraft = draft;
+  // Stage 1: Read inputs
+  await stage(0, 'Reading your project inputs', async () => project);
+
+  // Stage 2: Fetch GitHub
+  const githubData = await stage(1, project.github_url ? 'Analysing GitHub repo' : 'Skipping GitHub (no repo)', async () => {
+    if(!project.github_url) return null;
+    return await fetchGitHubData(project.github_url);
+  });
+
+  // Stage 3: Fetch webpage
+  const webpageData = await stage(2, project.webpage_url ? 'Crawling your website' : 'Crawling any linked site', async () => {
+    if(!project.webpage_url) return null;
+    return await fetchWebpageData(project.webpage_url);
+  });
+
+  // Stage 4: Extract key phrases
+  const analysis = await stage(3, 'Extracting key phrases', async () => {
+    return analyzeSources(project, githubData, webpageData);
+  });
+
+  // Stage 5: Generate draft
+  let draft = null;
+  try {
+    draft = await stage(4, 'Composing hook + headline', async () => {
+      try { return await fetchOllamaDraft(project, analysis); }
+      catch(err) { console.warn('[gen] Ollama failed:', err.message); }
+      try { return await fetchBackendDraft(projectId); }
+      catch(err) { console.warn('[gen] Backend failed:', err.message); }
+      return composeDraftClientSide(project, analysis);
+    });
+  } catch(e) {
+    draft = composeDraftClientSide(project, analysis);
+  }
+
+  // Stage 6: Render
+  await stage(5, 'Rendering animated card', async () => {
+    state.lastDraft = draft;
+    return draft;
+  });
+
   openGeneratedPreview(draft, project);
 }
 
+function openGeneratedPreview(draft, project){
+  // Reuse the Details inline pane to show the fresh card with full animation + actions.
+  const item = {
 function openGeneratedPreview(draft, project){
   // Reuse the Details inline pane to show the fresh card with full animation + actions.
   const item = {
@@ -1798,7 +1885,7 @@ function openGeneratedPreview(draft, project){
     description: draft.body || '',
     hook: draft.hook || '',
     hook_highlight: draft.hook_highlight || draft.headline || project.name,
-    url: draft.cta_url || project.github_url || '#',
+    url: draft.cta_url || project.webpage_url || project.github_url || '#',
     logo_letter: (draft.headline || project.name || '?')[0].toUpperCase(),
     gradient_from: draft.accent_color || '#f59e0b',
     gradient_to: '#ec4899',
