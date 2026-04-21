@@ -872,7 +872,7 @@ textarea{min-height:80px;resize:vertical}
         <span class="hub-pill m"><span class="dot"></span>No projects yet</span>
       </div>
       <div class="hub-actions">
-        <button class="chip" type="button" onclick="event.stopPropagation();openProjectModal()">+ New project</button>
+        <button class="chip" type="button" onclick="event.stopPropagation();openNewProjectModal()">+ New project</button>
       </div>
     </div>
 
@@ -979,7 +979,7 @@ textarea{min-height:80px;resize:vertical}
       <h2 style="font-size:22px;letter-spacing:-.4px">Projects</h2>
       <p style="color:var(--text-2);font-size:13px;margin-top:4px">Describe what you're advertising. The generator turns each project into a 30-second slide. You can edit each card up to 3 times per day.</p>
     </div>
-    <button class="btn btn-primary" onclick="openProjectModal()">+ New project</button>
+    <button class="btn btn-primary" onclick="openNewProjectModal()">+ New project</button>
   </div>
 
   <div id="proj-list" class="proj-list">
@@ -1042,36 +1042,41 @@ textarea{min-height:80px;resize:vertical}
 <!-- PROJECT MODAL -->
 <div class="modal-bg" id="proj-modal">
   <div class="modal">
-    <h2>New project</h2>
+    <h2 id="proj-modal-title">New project</h2>
     <div class="modal-sub">Tell us what you're advertising. The card generator uses these fields.</div>
     <form onsubmit="return submitProject(event)">
+      <input type="hidden" name="project_id" id="proj-modal-id"/>
       <div>
         <label>Project name *</label>
-        <input name="name" required placeholder="e.g. Paperclip"/>
+        <input name="name" id="proj-name" required placeholder="e.g. Paperclip"/>
       </div>
       <div>
         <label>GitHub repo</label>
-        <input name="github_url" type="url" placeholder="https://github.com/org/repo"/>
+        <input name="github_url" id="proj-github" type="url" placeholder="https://github.com/org/repo"/>
       </div>
       <div>
         <label>Website / landing page</label>
-        <input name="webpage_url" type="url" placeholder="https://yourproduct.com"/>
+        <input name="webpage_url" id="proj-webpage" type="url" placeholder="https://yourproduct.com"/>
       </div>
       <div>
         <label>Description <span style="color:var(--text-2);font-size:12px">(optional — auto-generated from GitHub + website if left empty)</span></label>
-        <textarea name="description" placeholder="What does the product do? Who uses it? Why does it matter? Leave blank to let the model infer this from your repo and site."></textarea>
+        <textarea name="description" id="proj-desc" placeholder="What does the product do? Who uses it? Why does it matter? Leave blank to let the model infer this from your repo and site."></textarea>
       </div>
       <div>
         <label>Ad goal *</label>
-        <textarea name="ad_goal" required placeholder="What do you want viewers to do? e.g. Sign up for beta, star the repo, book a demo."></textarea>
+        <textarea name="ad_goal" id="proj-goal" required placeholder="What do you want viewers to do? e.g. Sign up for beta, star the repo, book a demo."></textarea>
       </div>
       <div>
         <label>Target audience</label>
-        <input name="target_audience" placeholder="e.g. AI engineers shipping production agents"/>
+        <input name="target_audience" id="proj-audience" placeholder="e.g. AI engineers shipping production agents"/>
+      </div>
+      <div>
+        <label>Notes <span style="color:var(--text-2);font-size:12px">(private — not shown on the card)</span></label>
+        <textarea name="notes" id="proj-notes" placeholder="Internal notes, ideas, reminders..."></textarea>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal('proj-modal')">Cancel</button>
-        <button type="submit" class="btn btn-primary">Create</button>
+        <button type="submit" class="btn btn-primary" id="proj-submit-btn">Create</button>
       </div>
     </form>
   </div>
@@ -1504,6 +1509,7 @@ async function loadProjects(){
         <div class="goal">GOAL · ${escape(p.ad_goal)}</div>
         <div class="proj-actions">
           <button class="btn btn-primary" onclick="generate('${p.id}')">✨ Generate card</button>
+          <button class="btn" onclick="openEditProjectModal('${p.id}')">Edit</button>
         </div>
       </div>`).join('');
   }catch(e){
@@ -1580,15 +1586,46 @@ function escape(s){ return (s||'').toString().replace(/[&<>"]/g, c => ({'&':'&am
 
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-function openProjectModal(){ openModal('proj-modal'); }
+function openNewProjectModal(){
+  document.getElementById('proj-modal-title').textContent = 'New project';
+  document.getElementById('proj-submit-btn').textContent = 'Create';
+  document.getElementById('proj-modal-id').value = '';
+  document.getElementById('proj-name').value = '';
+  document.getElementById('proj-github').value = '';
+  document.getElementById('proj-webpage').value = '';
+  document.getElementById('proj-desc').value = '';
+  document.getElementById('proj-goal').value = '';
+  document.getElementById('proj-audience').value = '';
+  document.getElementById('proj-notes').value = '';
+  openModal('proj-modal');
+}
+function openEditProjectModal(projectId){
+  const p = state.projects.find(x => x.id === projectId);
+  if(!p) return;
+  document.getElementById('proj-modal-title').textContent = 'Edit project';
+  document.getElementById('proj-submit-btn').textContent = 'Save changes';
+  document.getElementById('proj-modal-id').value = p.id;
+  document.getElementById('proj-name').value = p.name || '';
+  document.getElementById('proj-github').value = p.github_url || '';
+  document.getElementById('proj-webpage').value = p.webpage_url || '';
+  document.getElementById('proj-desc').value = p.description || '';
+  document.getElementById('proj-goal').value = p.ad_goal || '';
+  document.getElementById('proj-audience').value = p.target_audience || '';
+  document.getElementById('proj-notes').value = p.notes || '';
+  openModal('proj-modal');
+}
 
 async function submitProject(e){
   e.preventDefault();
   const fd = new FormData(e.target);
   const payload = Object.fromEntries(fd.entries());
+  const projectId = payload.project_id;
+  delete payload.project_id;
   try{
-    const r = await fetch(`/api/advertiser/${advId()}/projects`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
+    const url = `/api/advertiser/${advId()}/projects${projectId ? '/' + projectId : ''}`;
+    const r = await fetch(url, {
+      method: projectId ? 'PATCH' : 'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify(payload)
     });
     if(!r.ok) throw new Error((await r.json()).error || 'failed');
@@ -1606,6 +1643,7 @@ async function submitProject(e){
 // ============================================================
 
 function buildOllamaPrompt(project, analysis){
+  const userDesc = (project.description || '').trim();
   return `You are an ad copywriter. Generate a JSON ad card for this project.
 
 PROJECT NAME: ${project.name || 'Project'}
@@ -1614,13 +1652,21 @@ TARGET AUDIENCE: ${project.target_audience || 'N/A'}
 WEBSITE: ${project.webpage_url || 'N/A'}
 GITHUB: ${project.github_url || 'N/A'}
 
-RESEARCH DATA:
+USER DESCRIPTION:
+${userDesc || 'None provided.'}
+
+RESEARCH DATA (from GitHub + website):
 ${analysis || 'No research data available.'}
 
-Your task: Write a compelling ad card. The body/description must be a genuine summary of what this project does, based ONLY on the research data above. Do not use generic marketing fluff. Be specific about the problem it solves and who it helps.
+SYNTHESIS INSTRUCTIONS:
+- If BOTH user description and research data are present: merge them into one better description. Keep the user's intent and tone, but enrich it with specific facts from the research. The result must be more specific and compelling than either source alone.
+- If only user description is present: polish and tighten it. Make it punchier and more specific.
+- If only research is present: write a description based solely on the research.
+- The body/description must be max 180 chars, genuinely informative, and free of generic marketing fluff like "Built for teams who need real results, fast."
+- Be specific about the problem solved, the technology used, or the audience helped.
 
 Return ONLY valid JSON with these exact fields, no markdown fences:
-{"headline":"string (max 60 chars, catchy)","badge":"string (e.g. New, Featured, AI Tool)","body":"string (max 180 chars, specific summary based on research)","cta_label":"string (e.g. Try it, Learn more, Sign up)","cta_url":"string","accent_color":"#hex (choose a color that fits the brand)","hook":"string (one sentence hook)","hook_highlight":"string (word to bold in hook)","tagline":"string (who it's for)"}`;
+{"headline":"string (max 60 chars, catchy)","badge":"string (e.g. New, Featured, AI Tool)","body":"string (max 180 chars, specific synthesis)","cta_label":"string (e.g. Try it, Learn more, Sign up)","cta_url":"string","accent_color":"#hex (choose a color that fits the brand)","hook":"string (one sentence hook)","hook_highlight":"string (word to bold in hook)","tagline":"string (who it's for)"}`;
 }
 
 async function fetchGitHubData(githubUrl){
@@ -1780,11 +1826,32 @@ async function fetchBackendDraft(projectId){
 
 function composeDraftClientSide(project, analysis){
   const name = project.name || 'Project';
+  const userDesc = (project.description || '').trim();
   const analysisText = analysis || '';
-  const firstSentence = analysisText.match(/[^.!?]+[.!?]+/)?.[0]?.trim() || '';
-  const body = firstSentence.length > 10 && firstSentence.length <= 200
-    ? firstSentence
-    : (analysisText.slice(0, 197) + '...' || 'Built for teams who need real results, fast.');
+
+  // Try to synthesize: prefer userDesc enriched with analysis, or analysis alone, or userDesc alone
+  let body = '';
+  if(userDesc && analysisText){
+    // Use userDesc as base, append a key fact from analysis if it fits
+    const fact = analysisText.match(/[^.!?]+[.!?]+/)?.[0]?.trim() || '';
+    if(fact && fact !== userDesc && (userDesc.length + fact.length + 2) <= 180){
+      body = userDesc + ' ' + fact;
+    } else if(userDesc.length <= 180){
+      body = userDesc;
+    } else {
+      body = userDesc.slice(0, 177) + '...';
+    }
+  } else if(userDesc){
+    body = userDesc.length <= 200 ? userDesc : userDesc.slice(0, 197) + '...';
+  } else if(analysisText){
+    const firstSentence = analysisText.match(/[^.!?]+[.!?]+/)?.[0]?.trim() || '';
+    body = firstSentence.length > 10 && firstSentence.length <= 200
+      ? firstSentence
+      : (analysisText.slice(0, 197) + '...');
+  } else {
+    body = 'Built for teams who need real results, fast.';
+  }
+
   return {
     headline: name,
     badge: 'Featured',
