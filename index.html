@@ -541,8 +541,8 @@ textarea{min-height:80px;resize:vertical}
         <h2 id="spot-title"><span class="pulse" aria-hidden="true"></span>Subscriber Spotlight</h2>
         <p class="sub"><b>$50/mo subscribers</b> get a featured slot here for <b>7 days</b>. Each project earns a square-logo card with direct link.</p>
       </div>
-      <button type="button" class="cta-promote" onclick="topup(50)" title="Subscribe to feature your project">
-        ✨ Feature your project
+      <button type="button" class="cta-promote" onclick="featureMyProject()" title="Feature my project (requires $50/mo subscription)">
+        ✨ Feature my project
       </button>
     </header>
     <div id="spot-grid" class="spot-grid">
@@ -820,23 +820,80 @@ async function loadAll(){ await Promise.all([loadWallet(), loadProjects(), loadL
 async function loadSpotlight(){
   const grid = document.getElementById('spot-grid');
   if(!grid) return;
-  let data = { items: [], ttl_days: 7 };
+  // 1. Anchors — the pinned/static list in spotlight.json (Nervix, etc.)
+  let staticData = { items: [], ttl_days: 7 };
   try{
     const r = await fetch('/spotlight.json', { cache: 'no-store' });
-    if(r.ok) data = await r.json();
+    if(r.ok) staticData = await r.json();
   }catch(e){}
-  const ttl = Math.max(1, parseInt(data.ttl_days || 7, 10));
+  const ttl = Math.max(1, parseInt(staticData.ttl_days || 7, 10));
   const now = Date.now();
-  const live = (data.items || []).filter(it => {
+  const anchors = (staticData.items || []).filter(it => {
     if(it.pinned) return true;
     const from = it.featured_from ? Date.parse(it.featured_from) : now;
     return (now - from) / 86400000 <= ttl;
   });
+  // 2. Dynamic — subscribers in adclaw_spotlight table (client-side, RLS-filtered)
+  let dynamic = [];
+  if(supa){
+    try{
+      const { data, error } = await supa
+        .from('adclaw_spotlight')
+        .select('id,name,tagline,description,url,logo_letter,gradient_from,gradient_to,accent_rgb,ttl_days,featured_from,user_id')
+        .order('featured_from', { ascending: false });
+      if(!error && Array.isArray(data)){
+        dynamic = data.map(row => ({
+          ...row,
+          pinned: false,
+          ttl_days: row.ttl_days || 7,
+          own: session && session.user && row.user_id === session.user.id
+        }));
+      }
+    }catch(e){ console.warn('spotlight fetch failed', e); }
+  }
+  const live = [...anchors, ...dynamic];
   if(!live.length){
     grid.innerHTML = `<div class="spot-empty">No featured projects yet. <b>Subscribe ($50/mo)</b> to feature yours here for 7 days.</div>`;
     return;
   }
-  grid.innerHTML = live.map(it => renderSpotlight(it, ttl)).join('');
+  grid.innerHTML = live.map(it => renderSpotlight(it, it.ttl_days || ttl)).join('');
+}
+
+// Prompt the user for project details and insert into adclaw_spotlight via RPC.
+async function featureMyProject(){
+  if(!supa || !session){ alert('Sign in first.'); return; }
+  // Must be subscribed
+  let subbed = false;
+  try{
+    const r = await fetch(`/api/advertiser/${advId()}/wallet`);
+    const d = await r.json();
+    subbed = !!d.is_subscribed;
+  }catch(e){}
+  if(!subbed){
+    if(confirm('Featuring a project is a benefit of the $50/mo subscription. Subscribe now?')) topup(50);
+    return;
+  }
+  // Prefill from the user's first project if any
+  const first = (state.projects && state.projects[0]) || {};
+  const name = prompt('Project name', first.name || '');
+  if(!name) return;
+  const tagline = prompt('Short tagline (max 80 chars)', first.ad_goal?.slice(0,80) || '') || '';
+  const url = prompt('Link (https://…)', first.github_url || '');
+  if(!url || !/^https?:\/\//i.test(url)){ alert('URL must start with https://'); return; }
+  const description = prompt('One-liner description', first.description?.slice(0,200) || '') || '';
+  const { data, error } = await supa.rpc('adclaw_feature_project', {
+    p_name: name,
+    p_tagline: tagline,
+    p_description: description,
+    p_url: url,
+    p_logo_letter: (name[0]||'?').toUpperCase(),
+    p_gradient_from: '#22d3ee',
+    p_gradient_to:   '#8b5cf6',
+    p_accent_rgb:    '34,211,238'
+  });
+  if(error){ alert('Spotlight failed: ' + error.message); return; }
+  await loadSpotlight();
+  document.getElementById('spot-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function renderSpotlight(it, ttl){
