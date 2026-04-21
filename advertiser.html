@@ -625,6 +625,152 @@ textarea{min-height:80px;resize:vertical}
 }
 .det-close:hover{background:rgba(0,0,0,.6);border-color:#fff}
 
+/* ═══════════════════════════════════════════════════════════════
+   INLINE DETAILS CARD — full-width expanded view (replaces pop-up)
+═══════════════════════════════════════════════════════════════ */
+.details-card{
+  --d-rgb: 245,158,11;
+  --dgrad-from:#f59e0b;--dgrad-to:#ec4899;
+  background:linear-gradient(160deg,rgba(6,14,33,.96),rgba(13,27,53,.9));
+  border:1px solid var(--border);border-radius:clamp(18px,2.5vw,24px);
+  overflow:hidden;position:relative;isolation:isolate;
+  box-shadow:0 22px 54px rgba(0,0,0,.5), 0 0 0 1px rgba(var(--d-rgb),.15);
+  opacity:0;transform:translateY(14px);
+  animation:rise .55s cubic-bezier(.16,1,.3,1) .05s forwards
+}
+.details-card::before{
+  content:'';position:absolute;inset:-1px;border-radius:inherit;z-index:-1;
+  background:conic-gradient(from 0deg,
+    rgba(var(--d-rgb),0) 0deg,
+    rgba(var(--d-rgb),.5) 90deg,
+    rgba(var(--d-rgb),0) 180deg,
+    rgba(var(--d-rgb),.3) 270deg,
+    rgba(var(--d-rgb),0) 360deg);
+  opacity:.45;animation:spin 18s linear infinite
+}
+.details-card::after{content:'';position:absolute;inset:1px;border-radius:inherit;z-index:-1;
+  background:linear-gradient(160deg,rgba(6,14,33,.98),rgba(13,27,53,.95))
+}
+.details-card .det-stage{
+  height:clamp(320px,50vw,440px);
+  border-radius:inherit;border-bottom-left-radius:0;border-bottom-right-radius:0
+}
+.details-card .det-body{padding:clamp(22px,3vw,32px)}
+.details-card .det-body h2{font-size:clamp(22px,3vw,28px);font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARD GENERATION — 6-step loading sequence
+═══════════════════════════════════════════════════════════════ */
+.gen-stage{
+  position:relative;padding:clamp(28px,4vw,44px) clamp(22px,3vw,32px);
+  background:linear-gradient(160deg,rgba(6,14,33,.96),rgba(13,27,53,.92));
+  border-radius:clamp(18px,2.5vw,24px);border:1px solid var(--border);
+  overflow:hidden;isolation:isolate;
+  min-height:clamp(340px,48vw,420px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(18px,3vw,26px)
+}
+.gen-stage::before{
+  content:'';position:absolute;inset:0;z-index:-1;
+  background:
+    radial-gradient(ellipse at 30% 20%,rgba(245,158,11,.18),transparent 55%),
+    radial-gradient(ellipse at 70% 80%,rgba(236,72,153,.16),transparent 60%),
+    radial-gradient(ellipse at 50% 50%,rgba(34,211,238,.10),transparent 60%)
+}
+.gen-orb{
+  position:relative;width:clamp(92px,12vw,120px);height:clamp(92px,12vw,120px);
+  border-radius:50%;display:grid;place-items:center
+}
+.gen-orb::before,.gen-orb::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  border:2px solid transparent;
+  border-top-color:var(--amber);border-right-color:var(--pink);
+  animation:spin 2.2s linear infinite
+}
+.gen-orb::after{
+  inset:10px;border-top-color:var(--cyan);border-right-color:var(--violet);
+  animation:spin 1.6s linear infinite reverse
+}
+.gen-orb-core{
+  width:52%;height:52%;border-radius:50%;
+  background:linear-gradient(135deg,var(--amber),var(--pink));
+  box-shadow:0 0 48px rgba(245,158,11,.6),inset 0 0 22px rgba(255,255,255,.2);
+  animation:orbPulse 2s ease-in-out infinite;
+  display:grid;place-items:center;font-size:clamp(22px,3vw,28px)
+}
+@keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+.gen-title{
+  font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,30px);font-weight:900;letter-spacing:-.6px;
+  background:linear-gradient(135deg,var(--amber),var(--pink));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-align:center
+}
+.gen-sub{font-size:13px;color:#b8c8dc;text-align:center;max-width:48ch;line-height:1.5}
+
+.gen-steps{
+  display:flex;flex-direction:column;gap:10px;
+  width:100%;max-width:480px;margin-top:10px
+}
+.gen-step{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;border-radius:12px;
+  background:rgba(13,27,53,.5);border:1px solid var(--border);
+  font-size:13px;color:#9aadc5;font-weight:500;
+  transition:all .4s cubic-bezier(.16,1,.3,1);
+  transform:translateX(-8px);opacity:.55
+}
+.gen-step.doing{
+  background:linear-gradient(135deg,rgba(245,158,11,.14),rgba(236,72,153,.08));
+  border-color:rgba(245,158,11,.4);color:#fff;transform:translateX(0);opacity:1;
+  box-shadow:0 4px 22px rgba(245,158,11,.2)
+}
+.gen-step.done{color:#d8e2f2;opacity:1;transform:translateX(0);background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3)}
+.gen-step .gen-tick{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  display:grid;place-items:center;font-size:12px;font-weight:900;font-family:var(--mono);
+  background:var(--surface-2);color:var(--text-3);border:1px solid var(--border-2);
+  transition:all .3s
+}
+.gen-step.doing .gen-tick{
+  background:var(--amber);color:#1a0f00;border-color:var(--amber);
+  animation:orbPulse 1.2s ease-in-out infinite
+}
+.gen-step.done .gen-tick{background:var(--green);color:#04170f;border-color:var(--green)}
+.gen-step.done .gen-tick::before{content:'✓'}
+.gen-step.doing .gen-tick::before,
+.gen-step:not(.doing):not(.done) .gen-tick::before{content:attr(data-n)}
+
+.gen-progress{
+  width:100%;max-width:480px;height:4px;border-radius:4px;background:var(--surface-2);overflow:hidden
+}
+.gen-progress::after{
+  content:'';display:block;height:100%;width:0%;
+  background:linear-gradient(90deg,var(--amber),var(--pink),var(--cyan),var(--violet));
+  background-size:200% 100%;
+  transition:width .6s cubic-bezier(.16,1,.3,1);
+  animation:shimmerBG 2.5s linear infinite
+}
+.gen-progress[data-pct="17"]::after{width:17%}
+.gen-progress[data-pct="34"]::after{width:34%}
+.gen-progress[data-pct="50"]::after{width:50%}
+.gen-progress[data-pct="67"]::after{width:67%}
+.gen-progress[data-pct="84"]::after{width:84%}
+.gen-progress[data-pct="100"]::after{width:100%}
+@keyframes shimmerBG{to{background-position:-200% 0}}
+
+/* Floating particles for ambience */
+.gen-stage .gen-particle{
+  position:absolute;width:3px;height:3px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.8),rgba(255,255,255,0));
+  animation:genFloat 6s ease-in-out infinite;pointer-events:none;z-index:-1
+}
+@keyframes genFloat{
+  0%,100%{opacity:0;transform:translateY(0) translateX(0)}
+  25%{opacity:.8}
+  50%{opacity:.4;transform:translateY(-30px) translateX(10px)}
+  100%{transform:translateY(-60px) translateX(-20px)}
+}
+
 .spot-empty{
   border:1px dashed var(--border-2);border-radius:20px;padding:40px 24px;text-align:center;
   color:var(--text-2);font-size:13px;line-height:1.55;
@@ -857,16 +1003,41 @@ textarea{min-height:80px;resize:vertical}
 
 </main>
 
-<!-- DETAILS MODAL (animated 20-30s preview + system-generated description) -->
-<div class="modal-bg" id="details-modal" onclick="if(event.target===this)closeModal('details-modal')">
-  <div class="modal" role="dialog" aria-modal="true" aria-label="Project details">
-    <div class="det-stage" aria-hidden="false">
-      <button type="button" class="det-close" aria-label="Close" onclick="closeModal('details-modal')">✕</button>
+<!-- DETAILS PANE (inline big expanded-card view — replaces the old pop-up) -->
+<section id="details-pane" class="tab-pane">
+  <article class="details-card" role="article" aria-labelledby="details-heading">
+    <div class="det-stage">
       <div class="det-slide"></div>
     </div>
     <div class="det-body"></div>
-  </div>
-</div>
+  </article>
+</section>
+
+<!-- GENERATION PANE (6-step animated loading while backend composes the card) -->
+<section id="generate-pane" class="tab-pane">
+  <article class="gen-stage" role="status" aria-live="polite" aria-label="Generating card">
+    <span class="gen-particle" style="top:20%;left:15%;animation-delay:0s"></span>
+    <span class="gen-particle" style="top:30%;right:20%;animation-delay:.8s"></span>
+    <span class="gen-particle" style="bottom:30%;left:25%;animation-delay:1.6s"></span>
+    <span class="gen-particle" style="bottom:20%;right:15%;animation-delay:2.4s"></span>
+    <span class="gen-particle" style="top:50%;left:8%;animation-delay:3.2s"></span>
+    <span class="gen-particle" style="top:60%;right:10%;animation-delay:4s"></span>
+    <div class="gen-orb"><div class="gen-orb-core">✨</div></div>
+    <div>
+      <div class="gen-title" id="gen-title">Composing your card…</div>
+      <div class="gen-sub" id="gen-sub">We read your inputs, fetch your repo + site, and build a 25-second animated ad.</div>
+    </div>
+    <div class="gen-steps" id="gen-steps">
+      <div class="gen-step" data-step="1"><span class="gen-tick" data-n="1"></span><span>Reading your project inputs</span></div>
+      <div class="gen-step" data-step="2"><span class="gen-tick" data-n="2"></span><span>Analysing GitHub repo</span></div>
+      <div class="gen-step" data-step="3"><span class="gen-tick" data-n="3"></span><span>Crawling your website</span></div>
+      <div class="gen-step" data-step="4"><span class="gen-tick" data-n="4"></span><span>Extracting key phrases</span></div>
+      <div class="gen-step" data-step="5"><span class="gen-tick" data-n="5"></span><span>Composing hook + headline</span></div>
+      <div class="gen-step" data-step="6"><span class="gen-tick" data-n="6"></span><span>Rendering animated card</span></div>
+    </div>
+    <div class="gen-progress" id="gen-progress" data-pct="0" aria-hidden="true"></div>
+  </article>
+</section>
 
 <!-- PROJECT MODAL -->
 <div class="modal-bg" id="proj-modal">
@@ -1025,7 +1196,7 @@ async function boot(){
   loadAll();
 }
 
-const TAB_TITLES = { hub:'Hub', profile:'Profile & Wallet', projects:'Projects', library:'Library' };
+const TAB_TITLES = { hub:'Hub', profile:'Profile & Wallet', projects:'Projects', library:'Library', details:'Spotlight · Details', generate:'Generating card' };
 function showTab(name){
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id===`${name}-pane`));
   const bread = document.getElementById('hub-bread');
@@ -1171,7 +1342,7 @@ function renderSpotlight(it, ttl){
     </div>`;
 }
 
-// Build & open the Details modal with the animated preview + description.
+// Open a spotlight item in the inline Details PANE (replaces the old pop-up).
 function openSpotlightDetails(key){
   const it = (window._spotCache && window._spotCache.get(key));
   if(!it){ return; }
@@ -1185,11 +1356,11 @@ function openSpotlightDetails(key){
     ? it.bullets.slice(0,4)
     : autoBullets(it);
   const fullDesc = it.description || autoDescription(it);
-  const modal = document.getElementById('details-modal');
-  modal.querySelector('.det-stage').style.setProperty('--d-rgb', rgb);
-  modal.querySelector('.det-stage').style.setProperty('--dgrad-from', gradFrom);
-  modal.querySelector('.det-stage').style.setProperty('--dgrad-to',   gradTo);
-  modal.querySelector('.det-slide').innerHTML = `
+  const card = document.querySelector('#details-pane .details-card');
+  card.style.setProperty('--d-rgb', rgb);
+  card.style.setProperty('--dgrad-from', gradFrom);
+  card.style.setProperty('--dgrad-to',   gradTo);
+  card.querySelector('.det-slide').innerHTML = `
     <div class="det-logo"><span class="det-logo-letter">${safe(letter)}</span></div>
     <div class="det-headline">${safe(it.name)}</div>
     <div class="det-tagline">${safe(it.tagline || '')}</div>
@@ -1198,9 +1369,9 @@ function openSpotlightDetails(key){
     <a class="det-cta" href="${safe(it.url)}" target="_blank" rel="noopener">Visit ${safe(host)} →</a>
     <div class="det-timer" aria-hidden="true"></div>
   `;
-  modal.querySelector('.det-body').innerHTML = `
+  card.querySelector('.det-body').innerHTML = `
     <div class="det-kicker">SemeClaw · system-generated description</div>
-    <h2>${safe(it.name)}</h2>
+    <h2 id="details-heading">${safe(it.name)}</h2>
     <div class="det-desc">${safe(fullDesc)}</div>
     <div class="det-meta">
       <span class="det-pill">↗ ${safe(host)}</span>
@@ -1208,15 +1379,15 @@ function openSpotlightDetails(key){
     </div>
     <div class="det-actions">
       <a class="btn btn-primary" href="${safe(it.url)}" target="_blank" rel="noopener">Visit site ↗</a>
-      <button type="button" class="btn btn-ghost" onclick="closeModal('details-modal')">Close</button>
+      <button type="button" class="btn btn-ghost" onclick="showTab('hub')">← Back to hub</button>
     </div>
   `;
-  modal.classList.add('open');
-  // Restart animations by toggling a class
-  const slide = modal.querySelector('.det-slide');
+  // Restart the slide animation from frame 0.
+  const slide = card.querySelector('.det-slide');
   slide.style.animation = 'none';
   void slide.offsetHeight;
   slide.style.animation = '';
+  showTab('details');
 }
 
 // Turn the free-text hook into safe HTML with the `hook_highlight` term
@@ -1392,21 +1563,128 @@ async function submitProject(e){
   return false;
 }
 
+// ============================================================
+// CARD GENERATION — backend-first, client-fallback, 6 animated stages.
+// The stages advance on a fixed 10s timeline regardless of backend speed
+// so the user sees a consistent, cinematic progression.
+// ============================================================
 async function generate(projectId){
   state.lastProjectId = projectId;
-  openModal('gen-modal');
-  document.getElementById('gen-preview-wrap').innerHTML = `<div class="empty">✨ Generating…</div>`;
-  try{
-    const r = await fetch(`/api/advertiser/${advId()}/projects/${projectId}/generate-card`, {method:'POST'});
-    const d = await r.json();
-    if(!r.ok || !d.draft) throw new Error(d.error || 'generation failed');
-    state.lastDraft = d.draft;
-    document.getElementById('gen-preview-wrap').innerHTML = renderSlide({
-      ...d.draft, accent_color: d.draft.accent_color, campaign_name: 'Preview', edits_today: 0, status: 'preview'
-    }).replace('<div class="status-row">', '<div class="status-row" style="display:none">')
-      .replace('<div class="slide-actions">', '<div class="slide-actions" style="display:none">');
-  }catch(e){
-    document.getElementById('gen-preview-wrap').innerHTML = `<div class="empty" style="color:var(--red)">⚠ ${escape(e.message)}</div>`;
+  showTab('generate');                  // jump to the inline loading pane
+  resetGenerationUI();
+  // Kick off backend + animated stages in parallel. We gate the final
+  // preview on BOTH: backend result or fallback, AND stage animation done.
+  const project = state.projects.find(p => p.id === projectId) || {};
+  const backendPromise = fetchGeneratedCard(projectId).catch(err => ({ error: err }));
+  await runGenerationStages(project);   // ~10s, resolves when all ticks are done
+  const result = await backendPromise;
+  if(result && result.draft){
+    state.lastDraft = result.draft;
+  } else {
+    // Client-side fallback: compose a reasonable draft from the user's own inputs.
+    state.lastDraft = composeDraftClientSide(project);
+    console.warn('generate-card backend failed; using client-side fallback', result && result.error);
+  }
+  openGeneratedPreview(state.lastDraft, project);
+}
+
+async function fetchGeneratedCard(projectId){
+  const r = await fetch(`/api/advertiser/${advId()}/projects/${projectId}/generate-card`, { method:'POST' });
+  if(!r.ok) throw new Error('generation failed (' + r.status + ')');
+  const d = await r.json();
+  if(!d.draft) throw new Error(d.error || 'no draft in response');
+  return d;
+}
+
+function composeDraftClientSide(p){
+  const name = p.name || 'Project';
+  const goal = (p.ad_goal || '').trim();
+  const desc = (p.description || '').trim();
+  const audience = (p.target_audience || '').trim();
+  const headline = name;
+  const hook = /agent|ai/i.test(name + ' ' + desc)
+    ? `Own an AI tool? *${name}* can put it to work.`
+    : `Looking for what *${name}* does?`;
+  const body = desc.length > 200 ? desc.slice(0, 197) + '…' : desc || 'Built for teams who need real results, fast.';
+  return {
+    headline,
+    badge: 'Featured',
+    body,
+    cta_label: goal ? goal.split(/\s+/).slice(0,3).join(' ') : 'Learn more',
+    cta_url: p.github_url || '',
+    accent_color: '#f59e0b',
+    hook,
+    hook_highlight: name,
+    tagline: audience ? `For ${audience}` : '',
+    _fallback: true
+  };
+}
+
+function resetGenerationUI(){
+  document.querySelectorAll('#gen-steps .gen-step').forEach(el => el.classList.remove('doing','done'));
+  const prog = document.getElementById('gen-progress');
+  if(prog) prog.dataset.pct = '0';
+  const title = document.getElementById('gen-title');
+  const sub = document.getElementById('gen-sub');
+  if(title) title.textContent = 'Composing your card…';
+  if(sub) sub.textContent = 'We read your inputs, fetch your repo + site, and build a 25-second animated ad.';
+}
+
+// Sequential stages: "doing" → "done" with staggered timing summing to ~10s.
+async function runGenerationStages(project){
+  const stages = [
+    { label: 'Reading your project inputs',  ms: 900 },
+    { label: project.github_url ? 'Analysing GitHub repo'    : 'Skipping GitHub (no repo)', ms: 1800 },
+    { label: project.github_url ? 'Crawling your website'    : 'Crawling any linked site',  ms: 1700 },
+    { label: 'Extracting key phrases',       ms: 1500 },
+    { label: 'Composing hook + headline',    ms: 1800 },
+    { label: 'Rendering animated card',      ms: 1300 }
+  ];
+  const steps = Array.from(document.querySelectorAll('#gen-steps .gen-step'));
+  const prog  = document.getElementById('gen-progress');
+  const total = steps.length;
+  for(let i = 0; i < total; i++){
+    const el = steps[i];
+    el.querySelector('span + span, span:nth-child(2)').textContent = stages[i].label;
+    el.classList.add('doing');
+    await sleep(stages[i].ms);
+    el.classList.remove('doing');
+    el.classList.add('done');
+    const pct = Math.round(((i+1) / total) * 100);
+    // Snap to one of our CSS width buckets.
+    const bucket = [0,17,34,50,67,84,100].reduce((a,b) => Math.abs(b - pct) < Math.abs(a - pct) ? b : a, 0);
+    if(prog) prog.dataset.pct = String(bucket);
+  }
+}
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function openGeneratedPreview(draft, project){
+  // Reuse the Details inline pane to show the fresh card with full animation + actions.
+  const item = {
+    id: 'draft-' + (project.id || Date.now()),
+    name: draft.headline || project.name || 'New card',
+    tagline: draft.tagline || '',
+    description: draft.body || '',
+    hook: draft.hook || '',
+    hook_highlight: draft.hook_highlight || draft.headline || project.name,
+    url: draft.cta_url || project.github_url || '#',
+    logo_letter: (draft.headline || project.name || '?')[0].toUpperCase(),
+    gradient_from: draft.accent_color || '#f59e0b',
+    gradient_to: '#ec4899',
+    accent_rgb: '245,158,11',
+    bullets: autoBullets({ tagline: draft.tagline, name: draft.headline })
+  };
+  window._spotCache.set(item.id, item);
+  openSpotlightDetails(item.id);
+  // Replace the back-button with Save + Regenerate actions.
+  const actions = document.querySelector('#details-pane .det-actions');
+  if(actions){
+    actions.innerHTML = `
+      <button type="button" class="btn btn-primary" onclick="saveGenerated()">💾 Save to Library</button>
+      <button type="button" class="btn" onclick="generate('${project.id}')">↻ Regenerate</button>
+      <button type="button" class="btn btn-ghost" onclick="showTab('projects')">Cancel</button>
+      ${draft._fallback ? '<span class="det-pill" style="border-color:rgba(245,158,11,.4);color:var(--amber)">Fallback draft</span>' : ''}
+    `;
   }
 }
 
