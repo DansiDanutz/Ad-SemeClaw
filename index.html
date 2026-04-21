@@ -410,6 +410,175 @@ textarea{min-height:80px;resize:vertical}
 .spot-days.ending::before{background:var(--amber);box-shadow:0 0 6px var(--amber)}
 .spot-days.expired::before{background:var(--red);box-shadow:0 0 6px var(--red)}
 
+/* Spotlight card actions (replaces full-card link) */
+.spot-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.spot-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 14px;min-height:40px;border-radius:10px;
+  font-size:12px;font-weight:700;letter-spacing:.3px;
+  cursor:pointer;transition:all .2s;font-family:inherit;flex:1 1 auto;justify-content:center
+}
+.spot-btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;flex-shrink:0}
+.spot-btn.primary{
+  background:linear-gradient(135deg,var(--sgrad-from),var(--sgrad-to));
+  border:1px solid transparent;color:#0a0718;
+  box-shadow:0 4px 14px rgba(var(--s-rgb),.3), inset 0 1px 0 rgba(255,255,255,.3)
+}
+.spot-btn.primary:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(var(--s-rgb),.5), inset 0 1px 0 rgba(255,255,255,.3)}
+.spot-btn.primary svg{stroke:#0a0718}
+.spot-btn.ghost{
+  background:transparent;border:1px solid rgba(var(--s-rgb),.35);color:rgba(var(--s-rgb),1)
+}
+.spot-btn.ghost:hover{background:rgba(var(--s-rgb),.12);border-color:rgba(var(--s-rgb),.6)}
+.spot-btn.icon-only{flex:0 0 auto;padding:10px 12px;min-width:40px;justify-content:center}
+
+/* ═══════════════════════════════════════════════════════════════
+   PROJECT DETAILS MODAL — animated 20-30s slide + description
+═══════════════════════════════════════════════════════════════ */
+#details-modal .modal{max-width:720px;padding:0;overflow:hidden}
+.det-stage{
+  --d-rgb: 245,158,11;
+  --dgrad-from:#f59e0b;--dgrad-to:#ec4899;
+  position:relative;height:clamp(280px,44vw,360px);
+  background:radial-gradient(ellipse at 20% 30%,rgba(var(--d-rgb),.22),transparent 65%),
+             radial-gradient(ellipse at 80% 70%,rgba(236,72,153,.16),transparent 55%),
+             linear-gradient(135deg,#020612,#0a1330);
+  overflow:hidden
+}
+.det-stage::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(1.5px 1.5px at 20% 25%,rgba(255,255,255,.3),transparent 50%),
+    radial-gradient(1.5px 1.5px at 60% 15%,rgba(255,255,255,.22),transparent 50%),
+    radial-gradient(1.5px 1.5px at 30% 70%,rgba(255,255,255,.25),transparent 50%),
+    radial-gradient(1.5px 1.5px at 80% 85%,rgba(255,255,255,.2),transparent 50%),
+    radial-gradient(1.5px 1.5px at 10% 85%,rgba(255,255,255,.15),transparent 50%),
+    radial-gradient(1.5px 1.5px at 90% 30%,rgba(255,255,255,.18),transparent 50%);
+  animation:twinkle 8s ease-in-out infinite;opacity:.8
+}
+@keyframes twinkle{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* The 25-second animated sequence */
+.det-slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:clamp(20px,4vw,40px);gap:14px;text-align:center}
+.det-logo{
+  width:clamp(72px,10vw,92px);height:clamp(72px,10vw,92px);border-radius:22px;
+  display:grid;place-items:center;position:relative;z-index:2;
+  background:linear-gradient(135deg,var(--dgrad-from),var(--dgrad-to));
+  box-shadow:0 14px 36px rgba(var(--d-rgb),.45), inset 0 1px 0 rgba(255,255,255,.25);
+  opacity:0;transform:scale(.3) rotate(-20deg);
+  animation:detSeq 25s cubic-bezier(.16,1,.3,1) infinite
+}
+.det-logo-letter{
+  font-family:'Playfair Display',serif;font-weight:900;
+  font-size:clamp(38px,5vw,54px);color:#fff;letter-spacing:-2px;
+  text-shadow:0 2px 10px rgba(0,0,0,.4)
+}
+.det-headline{
+  font-family:'Playfair Display',serif;font-size:clamp(26px,4vw,42px);font-weight:900;
+  letter-spacing:-1.4px;line-height:1.05;
+  background:linear-gradient(135deg,var(--dgrad-from),var(--dgrad-to));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  opacity:0;transform:translateY(18px);
+  animation:detSeqText 25s cubic-bezier(.16,1,.3,1) infinite
+}
+.det-tagline{
+  font-size:clamp(14px,1.7vw,17px);color:var(--text);font-weight:500;max-width:46ch;line-height:1.4;
+  opacity:0;transform:translateY(12px);
+  animation:detSeqTag 25s cubic-bezier(.16,1,.3,1) infinite
+}
+.det-bullets{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:90%}
+.det-bullet{
+  font-size:11px;font-family:var(--mono);color:rgba(var(--d-rgb),1);font-weight:700;letter-spacing:.4px;
+  padding:6px 12px;border-radius:999px;
+  background:rgba(var(--d-rgb),.12);border:1px solid rgba(var(--d-rgb),.3);
+  opacity:0;transform:translateY(8px);
+  animation:detSeqBullet 25s cubic-bezier(.16,1,.3,1) infinite
+}
+.det-bullet:nth-child(1){animation-delay:0s}
+.det-bullet:nth-child(2){animation-delay:.25s}
+.det-bullet:nth-child(3){animation-delay:.5s}
+.det-bullet:nth-child(4){animation-delay:.75s}
+.det-cta{
+  display:inline-flex;align-items:center;gap:8px;margin-top:8px;
+  padding:12px 22px;border-radius:999px;font-size:13px;font-weight:800;letter-spacing:.2px;
+  background:#fff;color:#0a0718;
+  box-shadow:0 12px 28px rgba(255,255,255,.12);
+  opacity:0;transform:scale(.9);
+  animation:detSeqCta 25s cubic-bezier(.16,1,.3,1) infinite
+}
+.det-timer{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  width:140px;height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden
+}
+.det-timer::before{
+  content:'';display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--dgrad-from),var(--dgrad-to));
+  animation:detTimer 25s linear infinite
+}
+
+/* 25-second keyframes. Scenes:
+   0–8% (0–2s):  logo scales in
+   8–32% (2–8s): headline + tagline fade in
+   32–60% (8–15s): bullets slide in one by one
+   60–80% (15–20s): CTA pulses in
+   80–96% (20–24s): hold
+   96–100% (24–25s): fade out
+*/
+@keyframes detSeq{
+  0%   {opacity:0; transform:scale(.3) rotate(-20deg)}
+  8%   {opacity:1; transform:scale(1) rotate(0)}
+  70%  {opacity:1; transform:scale(1) rotate(0)}
+  96%  {opacity:1; transform:scale(1) rotate(0)}
+  100% {opacity:0; transform:scale(1) rotate(0)}
+}
+@keyframes detSeqText{
+  0%,10%  {opacity:0; transform:translateY(18px)}
+  20%     {opacity:1; transform:translateY(0)}
+  80%     {opacity:1; transform:translateY(0)}
+  92%     {opacity:1; transform:translateY(0)}
+  100%    {opacity:0; transform:translateY(-8px)}
+}
+@keyframes detSeqTag{
+  0%,18%  {opacity:0; transform:translateY(12px)}
+  28%     {opacity:1; transform:translateY(0)}
+  84%     {opacity:1; transform:translateY(0)}
+  92%     {opacity:0; transform:translateY(-6px)}
+  100%    {opacity:0}
+}
+@keyframes detSeqBullet{
+  0%,32% {opacity:0; transform:translateY(8px)}
+  40%    {opacity:1; transform:translateY(0)}
+  80%    {opacity:1; transform:translateY(0)}
+  90%    {opacity:0}
+  100%   {opacity:0}
+}
+@keyframes detSeqCta{
+  0%,60% {opacity:0; transform:scale(.9)}
+  68%    {opacity:1; transform:scale(1.04)}
+  72%    {transform:scale(1)}
+  92%    {opacity:1; transform:scale(1)}
+  100%   {opacity:0; transform:scale(.95)}
+}
+@keyframes detTimer{
+  0%   {width:0}
+  100% {width:100%}
+}
+
+.det-body{padding:clamp(20px,3vw,28px) clamp(20px,3vw,28px) clamp(20px,3vw,28px)}
+.det-body h2{font-size:22px;font-weight:800;letter-spacing:-.4px;margin-bottom:6px}
+.det-body .det-kicker{font-size:10px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;color:var(--text-3);margin-bottom:10px}
+.det-body .det-desc{font-size:14px;line-height:1.6;color:var(--text-2)}
+.det-body .det-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.det-body .det-pill{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.4px;padding:5px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border-2);color:var(--text-2)}
+.det-body .det-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.det-body .det-actions .btn{min-height:42px}
+.det-close{position:absolute;top:14px;right:14px;z-index:5;
+  width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.35);backdrop-filter:blur(8px);color:#fff;
+  display:grid;place-items:center;cursor:pointer;transition:all .2s;font-size:16px;line-height:1
+}
+.det-close:hover{background:rgba(0,0,0,.6);border-color:#fff}
+
 .spot-empty{
   border:1px dashed var(--border-2);border-radius:20px;padding:40px 24px;text-align:center;
   color:var(--text-2);font-size:13px;line-height:1.55;
@@ -641,6 +810,17 @@ textarea{min-height:80px;resize:vertical}
 </section>
 
 </main>
+
+<!-- DETAILS MODAL (animated 20-30s preview + system-generated description) -->
+<div class="modal-bg" id="details-modal" onclick="if(event.target===this)closeModal('details-modal')">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Project details">
+    <div class="det-stage" aria-hidden="false">
+      <button type="button" class="det-close" aria-label="Close" onclick="closeModal('details-modal')">✕</button>
+      <div class="det-slide"></div>
+    </div>
+    <div class="det-body"></div>
+  </div>
+</div>
 
 <!-- PROJECT MODAL -->
 <div class="modal-bg" id="proj-modal">
@@ -896,6 +1076,9 @@ async function featureMyProject(){
   document.getElementById('spot-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// Store spotlight items so the modal can look them up by id.
+window._spotCache = new Map();
+
 function renderSpotlight(it, ttl){
   const from = it.featured_from ? Date.parse(it.featured_from) : Date.now();
   const elapsed = Math.floor((Date.now() - from) / 86400000);
@@ -910,10 +1093,12 @@ function renderSpotlight(it, ttl){
   const rgb = it.accent_rgb || '245,158,11';
   const letter = (it.logo_letter || it.name || '?')[0].toUpperCase();
   const safe = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const key = it.id || it.url || it.name;
+  window._spotCache.set(key, it);
   return `
-    <a class="spot-card" href="${safe(it.url)}" target="_blank" rel="noopener"
+    <div class="spot-card"
        style="--sgrad-from:${gradFrom};--sgrad-to:${gradTo};--s-rgb:${rgb}"
-       aria-label="Visit ${safe(it.name)}">
+       role="group" aria-label="${safe(it.name)}">
       <div class="spot-head-row">
         <div class="spot-logo" aria-hidden="true"><span class="spot-logo-letter">${safe(letter)}</span></div>
         <span class="spot-arrow" aria-hidden="true">↗</span>
@@ -926,7 +1111,82 @@ function renderSpotlight(it, ttl){
         <span class="spot-host">${safe(host)}</span>
         <span class="spot-days ${remClass}">${safe(remLabel)}</span>
       </div>
-    </a>`;
+      <div class="spot-actions">
+        <button type="button" class="spot-btn ghost" onclick="openSpotlightDetails('${safe(key)}')" aria-label="Details">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v5"/><circle cx="12" cy="16.5" r="1" fill="currentColor" stroke="none"/></svg>
+          Details
+        </button>
+        <a class="spot-btn primary" href="${safe(it.url)}" target="_blank" rel="noopener" aria-label="Visit ${safe(it.name)}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5h5v5M19 5l-8.5 8.5M5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>
+          Visit site
+        </a>
+      </div>
+    </div>`;
+}
+
+// Build & open the Details modal with the animated preview + description.
+function openSpotlightDetails(key){
+  const it = (window._spotCache && window._spotCache.get(key));
+  if(!it){ return; }
+  const safe = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const host = (() => { try { return new URL(it.url).host.replace(/^www\./,''); } catch { return it.url; } })();
+  const gradFrom = it.gradient_from || '#f59e0b';
+  const gradTo   = it.gradient_to   || '#ec4899';
+  const rgb = it.accent_rgb || '245,158,11';
+  const letter = (it.logo_letter || it.name || '?')[0].toUpperCase();
+  const bullets = Array.isArray(it.bullets) && it.bullets.length
+    ? it.bullets.slice(0,4)
+    : autoBullets(it);
+  const fullDesc = it.description || autoDescription(it);
+  const modal = document.getElementById('details-modal');
+  modal.querySelector('.det-stage').style.setProperty('--d-rgb', rgb);
+  modal.querySelector('.det-stage').style.setProperty('--dgrad-from', gradFrom);
+  modal.querySelector('.det-stage').style.setProperty('--dgrad-to',   gradTo);
+  modal.querySelector('.det-slide').innerHTML = `
+    <div class="det-logo"><span class="det-logo-letter">${safe(letter)}</span></div>
+    <div class="det-headline">${safe(it.name)}</div>
+    <div class="det-tagline">${safe(it.tagline || '')}</div>
+    <div class="det-bullets">${bullets.map(b => `<span class="det-bullet">${safe(b)}</span>`).join('')}</div>
+    <a class="det-cta" href="${safe(it.url)}" target="_blank" rel="noopener">Visit ${safe(host)} →</a>
+    <div class="det-timer" aria-hidden="true"></div>
+  `;
+  modal.querySelector('.det-body').innerHTML = `
+    <div class="det-kicker">SemeClaw · system-generated description</div>
+    <h2>${safe(it.name)}</h2>
+    <div class="det-desc">${safe(fullDesc)}</div>
+    <div class="det-meta">
+      <span class="det-pill">↗ ${safe(host)}</span>
+      ${it.pinned ? '<span class="det-pill">Anchor · pinned</span>' : '<span class="det-pill">7-day feature</span>'}
+    </div>
+    <div class="det-actions">
+      <a class="btn btn-primary" href="${safe(it.url)}" target="_blank" rel="noopener">Visit site ↗</a>
+      <button type="button" class="btn btn-ghost" onclick="closeModal('details-modal')">Close</button>
+    </div>
+  `;
+  modal.classList.add('open');
+  // Restart animations by toggling a class
+  const slide = modal.querySelector('.det-slide');
+  slide.style.animation = 'none';
+  void slide.offsetHeight;
+  slide.style.animation = '';
+}
+
+// Lightweight fallbacks when an item lacks its own bullets/description.
+function autoBullets(it){
+  const name = (it.name || '').trim();
+  const base = [];
+  if(it.tagline) base.push(it.tagline);
+  base.push('Featured by SemeClaw');
+  base.push('Subscriber Spotlight');
+  if(it.pinned) base.push('Anchor partner');
+  return base.slice(0,4);
+}
+function autoDescription(it){
+  const bits = [];
+  if(it.tagline) bits.push(it.tagline + '.');
+  if(it.name)   bits.push(`${it.name} is featured in the SemeClaw Subscriber Spotlight — projects from $50/mo subscribers get a 7-day slot here.`);
+  if(!it.pinned) bits.push('Tap "Visit site" to open the project homepage in a new tab.');
+  return bits.join(' ');
 }
 
 async function loadWallet(){
