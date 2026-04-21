@@ -43,10 +43,15 @@ header{
   header{gap:8px;padding:10px 14px}
   header .brand-sub{display:none}
 }
+@media(max-width:460px){
+  header{gap:6px;padding:10px 10px}
+  header .user-chip-name{display:none}
+  header .user-chip{padding:3px}
+  header a.btn{padding:7px 10px;font-size:11px}
+}
 header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,var(--amber) 30%,var(--pink) 70%,transparent)}
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.3px;min-width:0;white-space:nowrap}
-.brand > div:last-child{min-width:0;overflow:hidden}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;flex-shrink:0}
 .brand-icon{width:32px;height:32px;flex-shrink:0;border-radius:9px;display:grid;place-items:center;font-size:15px;
   background:linear-gradient(135deg,rgba(245,158,11,.3),rgba(236,72,153,.18));
   border:1px solid rgba(245,158,11,.45);box-shadow:0 0 22px var(--amber-glow)}
