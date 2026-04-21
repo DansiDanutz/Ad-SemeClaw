@@ -1474,7 +1474,10 @@ async function loadProjects(){
   const list = document.getElementById('proj-list');
   try{
     const r = await fetch(`/api/advertiser/${advId()}/projects`);
-    state.projects = await r.json();
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    if(!Array.isArray(data)) throw new Error('expected array');
+    state.projects = data;
     const n = state.projects.length;
     document.getElementById('hub-projects-count').textContent = fmt(n);
     document.getElementById('hub-stat-projects').textContent = fmt(n);
@@ -1499,6 +1502,11 @@ async function loadProjects(){
         </div>
       </div>`).join('');
   }catch(e){
+    state.projects = [];
+    document.getElementById('hub-projects-count').textContent = '0';
+    document.getElementById('hub-stat-projects').textContent = '0';
+    const meta = document.getElementById('hub-projects-meta');
+    if(meta) meta.innerHTML = '<span class="hub-pill m"><span class="dot"></span>No projects yet</span>';
     list.innerHTML = `<div class="empty">No projects yet. Click <strong>+ New project</strong> to create your first one.</div>`;
   }
 }
@@ -1507,7 +1515,10 @@ async function loadLibrary(){
   const grid = document.getElementById('lib-grid');
   try{
     const r = await fetch(`/api/advertiser/${advId()}/library`);
-    state.library = await r.json();
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    if(!Array.isArray(data)) throw new Error('expected array');
+    state.library = data;
     const n = state.library.length;
     const enabled  = state.library.filter(s => s.status === 'enabled').length;
     const active   = state.library.filter(s => s.status === 'active').length;
@@ -1524,7 +1535,14 @@ async function loadLibrary(){
     }
     grid.innerHTML = state.library.map(renderSlide).join('');
   }catch(e){
-    grid.innerHTML = `<div class="empty">No cards yet.</div>`;
+    state.library = [];
+    document.getElementById('hub-library-count').textContent = '0';
+    document.getElementById('hub-stat-slides').textContent  = '0';
+    const setTxt = (id,v) => { const el = document.getElementById(id); if(el) el.textContent = fmt(v); };
+    setTxt('hub-enabled-count', 0);
+    setTxt('hub-active-count',  0);
+    setTxt('hub-inactive-count', 0);
+    grid.innerHTML = `<div class="empty">No cards yet. Go to <strong>Projects</strong> and click <strong>Generate card</strong>.</div>`;
   }
 }
 
