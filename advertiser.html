@@ -181,6 +181,30 @@ textarea{min-height:80px;resize:vertical}
 
 .empty{padding:40px 20px;text-align:center;color:var(--text-3);font-size:13px}
 
+/* HISTORY */
+.history-list{display:flex;flex-direction:column;gap:10px}
+.history-row{display:grid;grid-template-columns:110px 1fr 100px 180px;gap:14px;align-items:center;padding:14px 18px;background:var(--bg-1);border:1px solid var(--border);border-radius:12px;transition:all .2s}
+.history-row:hover{border-color:var(--border-2);background:var(--surface)}
+.history-row .tx-type{font-size:10px;font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;font-weight:700;padding:4px 10px;border-radius:6px;display:inline-block;text-align:center}
+.tx-purchase{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.tx-spend{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.tx-refund{background:rgba(34,211,238,.1);color:var(--cyan);border:1px solid rgba(34,211,238,.3)}
+.tx-subscription{background:rgba(139,92,246,.12);color:var(--violet);border:1px solid rgba(139,92,246,.3)}
+.history-row .tx-desc{font-size:13px;color:var(--text-2);line-height:1.4}
+.history-row .tx-desc b{color:var(--text);font-weight:700}
+.history-row .tx-credits{font-size:14px;font-family:var(--mono);font-weight:700;text-align:right}
+.history-row .tx-credits.pos{color:var(--green)}
+.history-row .tx-credits.neg{color:var(--amber)}
+.history-row .tx-date{font-size:11px;color:var(--text-3);font-family:var(--mono);text-align:right}
+@media(max-width:760px){
+  .history-row{grid-template-columns:90px 1fr 80px;gap:10px}
+  .history-row .tx-date{display:none}
+}
+@media(max-width:560px){
+  .history-row{grid-template-columns:1fr;gap:6px}
+  .history-row .tx-credits,.history-row .tx-date{text-align:left}
+}
+
 /* PRICING / PROFILE misc */
 .pm-row{display:flex;align-items:center;gap:12px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-top:8px}
 .pm-icon{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--violet),var(--pink));display:grid;place-items:center;font-weight:800;font-size:14px}
@@ -295,6 +319,7 @@ textarea{min-height:80px;resize:vertical}
 .hub-card.c-profile{--accent:var(--violet);--accent-rgb:139,92,246}
 .hub-card.c-projects{--accent:var(--cyan);--accent-rgb:34,211,238}
 .hub-card.c-library{--accent:var(--pink);--accent-rgb:236,72,153}
+.hub-card.c-history{--accent:var(--green);--accent-rgb:16,185,129}
 
 /* Back-to-hub breadcrumb */
 .hub-bread{display:none;align-items:center;gap:10px;margin-bottom:18px;font-family:var(--mono);font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--text-3);opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s}
@@ -915,6 +940,22 @@ textarea{min-height:80px;resize:vertical}
       </div>
     </div>
 
+    <!-- History -->
+    <div class="hub-card c-history span-6" onclick="showTab('history')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')showTab('history')">
+      <div class="aurora"></div>
+      <div class="row-top">
+        <div class="icon">📜</div>
+        <span class="hub-chev" aria-hidden="true">→</span>
+      </div>
+      <div class="kicker">History</div>
+      <div class="big gradient"><span id="hub-history-purchased">0</span><span class="unit">in</span></div>
+      <div class="desc">Track every credit top-up and every ad impression that spent it.</div>
+      <div class="hub-meta">
+        <span class="hub-pill g"><span class="dot"></span><b id="hub-history-spent" class="mr-count">0</b> spent</span>
+        <span class="hub-pill m"><span class="dot"></span><b id="hub-history-tx-count" class="mr-count">0</b> txns</span>
+      </div>
+    </div>
+
   </div>
 
   <!-- ═══ SUBSCRIBER SPOTLIGHT ═══ -->
@@ -1021,6 +1062,35 @@ textarea{min-height:80px;resize:vertical}
 
   <div id="lib-grid" class="lib-grid">
     <div class="empty">Loading library…</div>
+  </div>
+</section>
+
+<!-- HISTORY -->
+<section id="history-pane" class="tab-pane">
+  <div class="section-head">
+    <div>
+      <h2 class="section-title">Credit History</h2>
+      <p class="section-sub">Every top-up and every impression. See where your credits go.</p>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-bottom:20px">
+    <div class="card span-4">
+      <div class="wallet-val" id="hist-purchased">0</div>
+      <div class="wallet-lbl">Credits purchased</div>
+    </div>
+    <div class="card span-4">
+      <div class="wallet-val" id="hist-spent">0</div>
+      <div class="wallet-lbl">Credits spent</div>
+    </div>
+    <div class="card span-4">
+      <div class="wallet-val" id="hist-balance">0</div>
+      <div class="wallet-lbl">Current balance</div>
+    </div>
+  </div>
+
+  <div id="history-list" class="history-list">
+    <div class="empty">Loading history…</div>
   </div>
 </section>
 
@@ -1160,7 +1230,7 @@ textarea{min-height:80px;resize:vertical}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 let supa = null, session = null;
-const state = { projects: [], library: [], lastDraft: null, lastProjectId: null };
+const state = { projects: [], library: [], lastDraft: null, lastProjectId: null, draftStatus: 'active', history: [] };
 const KOKORO_VOICES = {
   af_bella: 'Bella — Warm female',
   af_nicole: 'Nicole — Clear female',
@@ -1283,7 +1353,7 @@ async function boot(){
   loadAll();
 }
 
-const TAB_TITLES = { hub:'Hub', profile:'Profile & Wallet', projects:'Projects', library:'Library', details:'Spotlight · Details', generate:'Generating card' };
+const TAB_TITLES = { hub:'Hub', profile:'Profile & Wallet', projects:'Projects', library:'Library', history:'History', details:'Spotlight · Details', generate:'Generating card' };
 function showTab(name){
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id===`${name}-pane`));
   const bread = document.getElementById('hub-bread');
@@ -1299,7 +1369,7 @@ function showTab(name){
 function advId(){ return session?.user?.id || 'demo'; }
 const fmt = n => new Intl.NumberFormat().format(n||0);
 
-async function loadAll(){ await Promise.all([loadWallet(), loadProjects(), loadLibrary(), loadSpotlight()]); }
+async function loadAll(){ await Promise.all([loadWallet(), loadProjects(), loadLibrary(), loadSpotlight(), loadHistory()]); }
 
 async function loadSpotlight(){
   const grid = document.getElementById('spot-grid');
@@ -1542,6 +1612,62 @@ async function loadWallet(){
   document.getElementById('wallet-credits').textContent = fmt(credits);
   document.getElementById('hub-credits').textContent = fmt(credits);
   document.getElementById('hub-stat-credits').textContent = fmt(credits);
+}
+
+async function loadHistory(){
+  try{
+    const r = await fetch(`/api/advertiser/${advId()}/history`);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    state.history = d.transactions || [];
+    const purchased = d.total_purchased || 0;
+    const spent = d.total_spent || 0;
+    const balance = d.wallet_credits || 0;
+
+    // Hub card
+    document.getElementById('hub-history-purchased').textContent = fmt(purchased);
+    document.getElementById('hub-history-spent').textContent = fmt(spent);
+    document.getElementById('hub-history-tx-count').textContent = fmt(state.history.length);
+
+    // History pane stats
+    const hp = document.getElementById('hist-purchased');
+    const hs = document.getElementById('hist-spent');
+    const hb = document.getElementById('hist-balance');
+    if(hp) hp.textContent = fmt(purchased);
+    if(hs) hs.textContent = fmt(spent);
+    if(hb) hb.textContent = fmt(balance);
+
+    // History list
+    const list = document.getElementById('history-list');
+    if(!list) return;
+    if(!state.history.length){
+      list.innerHTML = `<div class="empty">No transactions yet. Top up credits to see your history here.</div>`;
+      return;
+    }
+    list.innerHTML = state.history.map(renderHistoryRow).join('');
+  }catch(e){
+    state.history = [];
+    const list = document.getElementById('history-list');
+    if(list) list.innerHTML = `<div class="empty">History unavailable.</div>`;
+  }
+}
+
+function renderHistoryRow(t){
+  const typeClass = 'tx-' + (t.type || 'purchase');
+  const typeLabel = (t.type || 'purchase').replace(/^./, c => c.toUpperCase());
+  const creditClass = (t.credits || 0) >= 0 ? 'pos' : 'neg';
+  const creditPrefix = (t.credits || 0) >= 0 ? '+' : '';
+  const date = t.created_at ? new Date(t.created_at).toLocaleString() : '—';
+  let desc = escape(t.description || '');
+  if(t.slide_headline) desc += ` <b>· ${escape(t.slide_headline)}</b>`;
+  if(t.campaign_name) desc += ` <span style="color:var(--text-3)">(${escape(t.campaign_name)})</span>`;
+  if(t.instance_id) desc += ` <span style="color:var(--text-3);font-size:11px">via ${escape(t.instance_id)}</span>`;
+  return `<div class="history-row">
+    <span class="tx-type ${typeClass}">${typeLabel}</span>
+    <span class="tx-desc">${desc}</span>
+    <span class="tx-credits ${creditClass}">${creditPrefix}${fmt(t.credits)}</span>
+    <span class="tx-date">${date}</span>
+  </div>`;
 }
 
 async function loadProjects(){
@@ -2009,6 +2135,14 @@ async function generate(projectId){
   openGeneratedPreview(draft, project);
 }
 
+function setDraftStatus(status){
+  state.draftStatus = status;
+  document.querySelectorAll('.preview-status-pill').forEach(p => {
+    p.classList.remove('sel-enabled','sel-active','sel-inactive');
+    if(p.dataset.status === status) p.classList.add('sel-' + status);
+  });
+}
+
 function openGeneratedPreview(draft, project){
   // Reuse the Details inline pane to show the fresh card with full animation + actions.
   const item = {
@@ -2027,11 +2161,20 @@ function openGeneratedPreview(draft, project){
   };
   window._spotCache.set(item.id, item);
   openSpotlightDetails(item.id);
-  // Replace the back-button with Save + Regenerate + Listen actions.
+  // Replace the back-button with status selector + Save + Regenerate + Listen actions.
   const actions = document.querySelector('#details-pane .det-actions');
   const voice = project.voice || 'af_bella';
+  const st = state.draftStatus || 'active';
   if(actions){
     actions.innerHTML = `
+      <div style="width:100%;margin-bottom:10px">
+        <label style="margin-bottom:6px;display:block">Set status before saving</label>
+        <div class="status-row" style="max-width:380px">
+          <button type="button" class="status-pill preview-status-pill ${st==='enabled'?'sel-enabled':''}" data-status="enabled" onclick="setDraftStatus('enabled')"><span class="status-dot"></span>Enabled</button>
+          <button type="button" class="status-pill preview-status-pill ${st==='active'?'sel-active':''}" data-status="active" onclick="setDraftStatus('active')"><span class="status-dot"></span>Active</button>
+          <button type="button" class="status-pill preview-status-pill ${st==='inactive'?'sel-inactive':''}" data-status="inactive" onclick="setDraftStatus('inactive')"><span class="status-dot"></span>Inactive</button>
+        </div>
+      </div>
       <button type="button" class="btn btn-primary" onclick="saveGenerated()">💾 Save to Library</button>
       <button type="button" class="btn tts-btn" onclick="playDraftTTS('${voice}')">🔊 Listen</button>
       <button type="button" class="btn" onclick="generate('${project.id}')">↻ Regenerate</button>
@@ -2055,6 +2198,7 @@ async function saveGenerated(){
         project_id: state.lastProjectId,
         accent: state.lastDraft.accent_color,
         budget: 250,
+        status: state.draftStatus || 'active',
       })
     });
     if(!r.ok) throw new Error((await r.json()).error || 'save failed');
