@@ -1094,6 +1094,16 @@ textarea{min-height:80px;resize:vertical}
         <input name="target_audience" id="proj-audience" placeholder="e.g. AI engineers shipping production agents"/>
       </div>
       <div>
+        <label>Voice <span class="label-hint">(for ad narration)</span></label>
+        <select name="voice" id="proj-voice" style="width:100%;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;">
+          <option value="af_bella">Bella — Warm female narrator (default)</option>
+          <option value="af_nicole">Nicole — Clear female, technical</option>
+          <option value="bf_emma">Emma — British female, professional</option>
+          <option value="am_adam">Adam — American male, authoritative</option>
+          <option value="bm_george">George — British male, formal</option>
+        </select>
+      </div>
+      <div>
         <label>Notes <span class="label-hint">(private — not shown on the card)</span></label>
         <textarea name="notes" id="proj-notes" placeholder="Internal notes, ideas, reminders..."></textarea>
       </div>
@@ -1151,6 +1161,38 @@ textarea{min-height:80px;resize:vertical}
 <script>
 let supa = null, session = null;
 const state = { projects: [], library: [], lastDraft: null, lastProjectId: null };
+const KOKORO_VOICES = {
+  af_bella: 'Bella — Warm female',
+  af_nicole: 'Nicole — Clear female',
+  bf_emma: 'Emma — British female',
+  am_adam: 'Adam — American male',
+  bm_george: 'George — British male',
+};
+let ttsAudio = null;
+async function playTTS(text, voice='af_bella'){
+  if(!text) return;
+  if(ttsAudio){ ttsAudio.pause(); ttsAudio = null; }
+  document.querySelectorAll('.tts-btn').forEach(b => b.textContent = '🔊');
+  const btn = event?.target;
+  try{
+    const url = `/api/tts?text=${encodeURIComponent(text)}&speaker=${encodeURIComponent(voice)}&lang=en`;
+    const r = await fetch(url);
+    if(!r.ok || r.status === 204) throw new Error('TTS unavailable');
+    const blob = await r.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    ttsAudio = new Audio(audioUrl);
+    ttsAudio.onended = () => { if(btn) btn.textContent = '🔊'; };
+    ttsAudio.onerror = () => { if(btn) btn.textContent = '🔊'; };
+    ttsAudio.play();
+    if(btn) btn.textContent = '⏸';
+  }catch(e){ console.warn('[tts]', e); alert('Voice narration unavailable. Try again later.'); }
+}
+function playDraftTTS(voice='af_bella'){
+  const d = state.lastDraft;
+  if(!d) return;
+  const text = `${d.headline || ''}. ${d.body || ''}`;
+  playTTS(text, voice);
+}
 
 // ── Generation config ──
 const GEN_CONFIG = {
@@ -1530,6 +1572,7 @@ async function loadProjects(){
         ${p.github_url ? `<div class="gh">${escape(p.github_url)}</div>` : ''}
         <div class="desc">${escape(p.description) || '<em style="color:var(--text-2)">No description — will be auto-generated from repo + site.</em>'}</div>
         <div class="goal">GOAL · ${escape(p.ad_goal)}</div>
+        ${p.voice ? `<div class="goal" style="color:var(--text-3);font-size:11px;margin-top:4px">🎙 ${KOKORO_VOICES[p.voice] || p.voice}</div>` : ''}
         <div class="proj-actions">
           <button class="btn btn-primary" onclick="generate('${p.id}')">✨ Generate card</button>
           <button class="btn" onclick="openEditProjectModal('${p.id}')">Edit</button>
@@ -1600,6 +1643,7 @@ function renderSlide(s){
         <button class="status-pill ${st==='inactive'?'sel-inactive':''}" onclick="setStatus('${s.id}','inactive')"><span class="status-dot"></span>Inactive</button>
       </div>
       <div class="slide-actions">
+        <button class="btn tts-btn" data-tts-headline="${(s.headline||'').replace(/"/g,'&quot;')}" data-tts-body="${(s.body||'').replace(/"/g,'&quot;')}" data-tts-voice="${s.voice || 'af_bella'}" onclick="playTTS(this.dataset.ttsHeadline + '. ' + this.dataset.ttsBody, this.dataset.ttsVoice)">🔊</button>
         <button class="btn" ${editsLeft<=0?'disabled':''} onclick="openEdit('${s.id}')">Edit</button>
       </div>
     </div>`;
@@ -1619,6 +1663,7 @@ function openNewProjectModal(){
   document.getElementById('proj-desc').value = '';
   document.getElementById('proj-goal').value = '';
   document.getElementById('proj-audience').value = '';
+  document.getElementById('proj-voice').value = 'af_bella';
   document.getElementById('proj-notes').value = '';
   openModal('proj-modal');
 }
@@ -1634,6 +1679,7 @@ function openEditProjectModal(projectId){
   document.getElementById('proj-desc').value = p.description || '';
   document.getElementById('proj-goal').value = p.ad_goal || '';
   document.getElementById('proj-audience').value = p.target_audience || '';
+  document.getElementById('proj-voice').value = p.voice || 'af_bella';
   document.getElementById('proj-notes').value = p.notes || '';
   openModal('proj-modal');
 }
@@ -1981,11 +2027,13 @@ function openGeneratedPreview(draft, project){
   };
   window._spotCache.set(item.id, item);
   openSpotlightDetails(item.id);
-  // Replace the back-button with Save + Regenerate actions.
+  // Replace the back-button with Save + Regenerate + Listen actions.
   const actions = document.querySelector('#details-pane .det-actions');
+  const voice = project.voice || 'af_bella';
   if(actions){
     actions.innerHTML = `
       <button type="button" class="btn btn-primary" onclick="saveGenerated()">💾 Save to Library</button>
+      <button type="button" class="btn tts-btn" onclick="playDraftTTS('${voice}')">🔊 Listen</button>
       <button type="button" class="btn" onclick="generate('${project.id}')">↻ Regenerate</button>
       <button type="button" class="btn btn-ghost" onclick="showTab('projects')">Cancel</button>
       ${draft._source === 'template' ? '<span class="det-pill" style="border-color:rgba(245,158,11,.4);color:var(--amber)">Fallback draft</span>' : ''}
