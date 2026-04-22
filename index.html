@@ -831,6 +831,8 @@ textarea{min-height:80px;resize:vertical}
   .clr-green{color:var(--green)}
   .clr-amber{color:var(--amber)}
   .clr-muted{color:var(--text-2)}
+  .grid-mb{margin-bottom:20px}
+  .voice-select{width:100%;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px}
 }
 </style>
 </head>
@@ -1074,7 +1076,7 @@ textarea{min-height:80px;resize:vertical}
     </div>
   </div>
 
-  <div class="grid" style="margin-bottom:20px">
+  <div class="grid grid-mb">
     <div class="card span-4">
       <div class="wallet-val" id="hist-purchased">0</div>
       <div class="wallet-lbl">Credits purchased</div>
@@ -1165,7 +1167,7 @@ textarea{min-height:80px;resize:vertical}
       </div>
       <div>
         <label>Voice <span class="label-hint">(for ad narration)</span></label>
-        <select name="voice" id="proj-voice" style="width:100%;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;">
+        <select name="voice" id="proj-voice" class="voice-select">
           <option value="af_bella">Bella — Warm female narrator (default)</option>
           <option value="af_nicole">Nicole — Clear female, technical</option>
           <option value="bf_emma">Emma — British female, professional</option>
