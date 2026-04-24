@@ -3131,7 +3131,7 @@ async function fetchWebpageData(url){
 
     if(!html){
       const proxyRes = await fetch(
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        `/api/advertiser/${encodeURIComponent(advId())}/fetch-webpage?url=${encodeURIComponent(url)}`,
         { signal: AbortSignal.timeout(10000) }
       );
       if(!proxyRes.ok) return null;
