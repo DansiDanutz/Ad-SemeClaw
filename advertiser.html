@@ -32,6 +32,20 @@ a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer}
 input,textarea,select{font-family:inherit}
 
+/* A11Y — keyboard focus visible on every interactive element */
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[role="button"]:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--amber);outline-offset:2px;border-radius:6px;
+}
+button:focus:not(:focus-visible){outline:none}
+/* Skip-link for screen readers + keyboard users */
+.skip-link{position:absolute;left:-9999px;top:8px;z-index:999;background:var(--amber);color:#000;padding:8px 14px;border-radius:6px;font-weight:700;font-size:13px}
+.skip-link:focus{left:12px}
+
+/* Respect OS reduced-motion preference */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
+
 /* HEADER */
 header{
   position:sticky;top:0;z-index:50;min-height:56px;
@@ -117,28 +131,99 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--amber);b
 textarea{min-height:80px;resize:vertical}
 .helper{font-size:11px;color:var(--text-3);margin-top:4px}
 
-/* LOGIN */
-.login-wrap{min-height:calc(100vh - 56px);display:grid;place-items:center;padding:clamp(20px,4vw,40px) clamp(14px,3vw,20px)}
-.login-box{max-width:420px;width:100%;background:var(--bg-1);border:1px solid var(--border);border-radius:clamp(14px,2vw,18px);padding:clamp(22px,4vw,32px);text-align:center}
-.login-box h1{font-size:clamp(22px,4vw,26px);letter-spacing:-.5px;font-weight:800;margin-bottom:8px}
-.login-box p{color:var(--text-2);font-size:13px;line-height:1.5;margin-bottom:24px}
-.login-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:46px;padding:12px;border-radius:10px;font-size:14px;font-weight:700;margin-top:10px;border:1px solid var(--border-2);background:var(--surface);color:var(--text);transition:all .2s}
-.login-btn:hover{border-color:var(--amber);background:var(--amber-dim)}
+/* LOGIN — animated marketing background */
+.login-wrap{position:relative;min-height:calc(100vh - 56px);display:grid;grid-template-columns:1.15fr 1fr;gap:clamp(20px,4vw,60px);place-items:center;padding:clamp(24px,5vw,60px) clamp(16px,4vw,48px);overflow:hidden}
+@media (max-width:900px){.login-wrap{grid-template-columns:1fr;padding:24px 16px}}
+.login-wrap::before{content:"";position:absolute;inset:-20%;background:
+  radial-gradient(900px 600px at 15% 20%, rgba(245,158,11,.18), transparent 60%),
+  radial-gradient(700px 500px at 85% 80%, rgba(236,72,153,.14), transparent 60%),
+  radial-gradient(600px 500px at 50% 50%, rgba(59,130,246,.10), transparent 70%);
+  animation:loginBgFloat 18s ease-in-out infinite alternate;pointer-events:none;z-index:0}
+@keyframes loginBgFloat{0%{transform:translate(-2%,-2%) scale(1)}100%{transform:translate(2%,2%) scale(1.06)}}
+.login-wrap::after{content:"";position:absolute;inset:0;background-image:
+  linear-gradient(rgba(245,158,11,.06) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(245,158,11,.06) 1px,transparent 1px);
+  background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 40%,transparent 85%);pointer-events:none;z-index:0}
+.login-hero{position:relative;z-index:1;max-width:560px}
+.login-hero .tag{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--border-2);border-radius:999px;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--amber);background:rgba(245,158,11,.08);margin-bottom:16px}
+.login-hero .tag .dot{width:6px;height:6px;border-radius:50%;background:var(--amber);animation:pulseDot 1.6s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.3);box-shadow:0 0 12px var(--amber)}}
+.login-hero h2{font-size:clamp(30px,5vw,52px);line-height:1.05;letter-spacing:-1.4px;font-weight:900;margin-bottom:16px;background:linear-gradient(135deg,#fff 20%,var(--amber) 60%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.login-hero .lead{font-size:clamp(14px,1.6vw,16px);line-height:1.55;color:var(--text-2);margin-bottom:24px;max-width:520px}
+.login-hero .lead b{color:var(--text);font-weight:700}
+.login-perks{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px}
+@media (max-width:600px){.login-perks{grid-template-columns:1fr}}
+.login-perk{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg-1);border:1px solid var(--border);border-radius:12px;font-size:12.5px;color:var(--text-2);transition:border-color .3s,transform .3s}
+.login-perk:hover{border-color:var(--amber);transform:translateY(-2px)}
+.login-perk .ic{font-size:18px;line-height:1;flex-shrink:0;margin-top:1px;width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(236,72,153,.12));border:1px solid rgba(245,158,11,.2)}
+.login-stats{display:flex;gap:18px;margin:20px 0 24px;padding:14px 18px;background:linear-gradient(180deg,var(--bg-1),transparent);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+.login-stats > div{flex:1;min-width:100px}
+.login-stats b{display:block;font-size:22px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(135deg,#fff,var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
+.login-stats span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-3);margin-top:4px}
+.login-perk b{display:block;color:var(--text);font-size:13px;margin-bottom:2px}
+.login-hero .cta-hint{font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:8px}
+.login-hero .cta-hint .arrow{display:inline-block;animation:arrowBounce 1.4s ease-in-out infinite}
+@keyframes arrowBounce{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+
+/* Floating demo cards in hero */
+.login-demo{position:relative;width:100%;max-width:180px;height:110px;margin-top:18px}
+.login-demo .lc{position:absolute;inset:0;padding:12px 14px;border-radius:12px;background:linear-gradient(135deg,var(--bg-2),var(--bg-1));border:1px solid var(--border-2);box-shadow:0 20px 60px rgba(0,0,0,.4);animation:lcRotate 9s ease-in-out infinite}
+.login-demo .lc:nth-child(1){animation-delay:0s}
+.login-demo .lc:nth-child(2){animation-delay:-3s}
+.login-demo .lc:nth-child(3){animation-delay:-6s}
+.login-demo .lc .badge{display:inline-block;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+.login-demo .lc h5{font-size:13px;font-weight:800;margin-bottom:4px;color:var(--text)}
+.login-demo .lc p{font-size:10.5px;color:var(--text-3);line-height:1.35;margin:0}
+@keyframes lcRotate{
+  0%   {opacity:0;transform:translate(0,20px) scale(.92) rotate(-2deg)}
+  10%  {opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}
+  30%  {opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}
+  40%  {opacity:0;transform:translate(0,-20px) scale(.92) rotate(2deg)}
+  100% {opacity:0;transform:translate(0,-20px) scale(.92) rotate(2deg)}
+}
+
+.login-box{position:relative;z-index:1;max-width:420px;width:100%;background:linear-gradient(180deg,var(--bg-1),rgba(24,24,27,.9));backdrop-filter:blur(12px);border:1px solid var(--border-2);border-radius:clamp(14px,2vw,20px);padding:clamp(24px,4vw,34px);text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 0 1px rgba(245,158,11,.08)}
+.login-box::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(135deg,transparent,rgba(245,158,11,.4),transparent,rgba(236,72,153,.3),transparent);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;animation:boxBorder 4s linear infinite}
+@keyframes boxBorder{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+.login-box .brand-icon{font-size:44px;margin-bottom:10px;animation:iconFloat 3s ease-in-out infinite}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.login-box h1{font-size:clamp(24px,4vw,30px);letter-spacing:-.5px;font-weight:900;margin-bottom:8px;background:linear-gradient(135deg,var(--amber),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.login-box p{color:var(--text-2);font-size:13px;line-height:1.55;margin-bottom:22px}
+.login-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;padding:12px;border-radius:12px;font-size:14px;font-weight:700;margin-top:10px;border:1px solid var(--border-2);background:var(--surface);color:var(--text);transition:all .2s;cursor:pointer}
+.login-btn:hover{border-color:var(--amber);background:var(--amber-dim);transform:translateY(-1px);box-shadow:0 8px 24px rgba(245,158,11,.15)}
 .login-btn svg{width:18px;height:18px;flex-shrink:0}
+.login-bonus{margin-top:18px;padding:10px 12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:10px;font-size:11.5px;color:#86efac;line-height:1.4}
+.login-bonus b{color:#22c55e}
+.auth-hint{margin-top:16px;font-size:11px;color:var(--text-3)}
 
 /* WALLET */
 .wallet-val{font-size:38px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,var(--amber),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
 .wallet-lbl{font-size:11px;color:var(--text-3);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;margin-top:6px}
 
 /* PROJECT CARDS */
-.proj-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:14px}
-.proj{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:16px;transition:all .2s}
+.proj-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-top:14px}
+.proj{position:relative;background:linear-gradient(180deg,var(--surface),var(--bg-1));border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color .25s,transform .25s,box-shadow .25s;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.proj::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--amber),var(--pink));opacity:.6;transition:opacity .25s}
+.proj:hover{border-color:var(--amber);transform:translateY(-2px);box-shadow:0 14px 32px rgba(0,0,0,.35),0 0 0 1px var(--amber-dim)}
+.proj:hover::before{opacity:1}
+.proj .proj-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .proj:hover{border-color:rgba(245,158,11,.4);box-shadow:0 0 20px var(--amber-soft)}
-.proj h3{font-size:15px;font-weight:700;margin-bottom:4px}
-.proj .gh{font-size:11px;color:var(--cyan);font-family:var(--mono);margin-bottom:8px;word-break:break-all}
-.proj .desc{font-size:12px;color:var(--text-2);line-height:1.5;min-height:34px}
-.proj .goal{font-size:11px;color:var(--text-3);margin-top:8px;font-family:var(--mono);letter-spacing:.3px}
-.proj-actions{display:flex;gap:6px;margin-top:12px}
+.proj h3{font-size:16px;font-weight:800;letter-spacing:-.3px;line-height:1.25}
+.proj .proj-tagline{font-size:12.5px;color:var(--amber);font-weight:600;font-style:italic;line-height:1.4;margin-top:-2px}
+.proj .proj-links{display:flex;flex-wrap:wrap;gap:6px}
+.proj .gh{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--cyan);font-family:var(--mono);padding:3px 8px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.18);border-radius:999px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj .gh.gh-web{color:var(--green);background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.18)}
+.proj .proj-problem{position:relative;font-size:12.5px;color:var(--text);line-height:1.5;padding:10px 12px 10px 32px;background:linear-gradient(180deg,rgba(245,158,11,.06),transparent);border:1px solid var(--amber-dim);border-radius:10px}
+.proj .proj-problem::before{content:"💡";position:absolute;left:10px;top:10px;font-size:13px}
+.proj .proj-problem b{color:var(--amber);font-weight:700;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;display:block;margin-bottom:3px}
+.proj .desc{font-size:12px;color:var(--text-2);line-height:1.5}
+.proj .desc em{color:var(--text-3)}
+.proj .proj-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:2px}
+.proj .proj-meta > div{padding:8px 10px;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;min-width:0}
+.proj .proj-meta b{display:block;font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--text-3);margin-bottom:3px}
+.proj .proj-meta span{display:block;font-size:11.5px;color:var(--text-2);line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.proj .goal{font-size:11px;color:var(--text-3);font-family:var(--mono);letter-spacing:.3px}
+.proj-actions{display:flex;gap:6px;margin-top:auto;padding-top:6px}
 
 /* LIBRARY CARDS */
 .lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-top:14px}
@@ -834,9 +919,336 @@ textarea{min-height:80px;resize:vertical}
   .grid-mb{margin-bottom:20px}
   .voice-select{width:100%;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SPECIAL — revenue tools
+═══════════════════════════════════════════════════════════════ */
+.hub-card.c-special{--accent:#22d3ee;--accent-rgb:34,211,238}
+.tier-badge-inline{font-size:11px;padding:6px 12px;border-radius:999px;font-weight:700;letter-spacing:.5px;border:1px solid var(--border)}
+.tier-badge-inline.t-free{color:#94a3b8}
+.tier-badge-inline.t-gold{color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08)}
+.tier-badge-inline.t-diamond{color:#22d3ee;border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.08)}
+
+.sp-block{margin-bottom:32px;border:1px solid var(--border);border-radius:14px;padding:clamp(18px,3vw,24px);background:var(--surface)}
+.sp-block header{margin-bottom:16px}
+.sp-block header h3{font-size:17px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px}
+.sp-block header p{font-size:13px;color:var(--text-2);line-height:1.55}
+
+.sp-referral{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding-bottom:16px;border-bottom:1px solid var(--border)}
+@media (max-width:640px){.sp-referral{grid-template-columns:1fr}}
+.sp-ref-code label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:8px}
+.sp-ref-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp-ref-row code{font-family:var(--mono);font-size:16px;font-weight:700;padding:8px 14px;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;color:var(--amber)}
+.sp-ref-row input{font-family:var(--mono);font-size:14px;padding:10px 14px;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;color:var(--text);min-width:160px}
+.sp-ref-stats{display:flex;gap:20px}
+.sp-ref-stats > div{display:flex;flex-direction:column;align-items:center;min-width:80px}
+.sp-ref-stats b{font-size:26px;font-weight:900;color:var(--amber)}
+.sp-ref-stats span{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:1.2px;margin-top:2px}
+.sp-apply-ref{margin-top:16px}
+.sp-apply-ref label{font-size:12px;color:var(--text-2);display:block;margin-bottom:8px}
+.sp-apply-msg{font-size:12px;margin-top:8px;min-height:16px}
+.sp-apply-msg.ok{color:#22c55e}
+.sp-apply-msg.err{color:#ef4444}
+
+/* Referral tree */
+.sp-tree{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.sp-tree-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.sp-tree-head h4{font-size:13px;font-weight:700;letter-spacing:-.2px}
+.sp-tree-head .sp-tree-earned{font-size:11px;color:var(--text-3)}
+.sp-tree-head .sp-tree-earned b{color:#22c55e;font-size:13px}
+.sp-tree-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
+.sp-tree-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 12px;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;font-size:12.5px}
+.sp-tree-row .sp-tree-email{font-family:var(--mono);color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-tree-row .sp-tree-spent{font-weight:700;color:var(--text-2)}
+.sp-tree-row .sp-tree-bonus{font-weight:700;color:#22c55e;font-size:11px;white-space:nowrap}
+.sp-tree-empty{text-align:center;padding:18px;color:var(--text-3);font-size:12.5px;border:1px dashed var(--border);border-radius:8px}
+.sp-tree-note{font-size:11px;color:var(--text-3);margin-top:10px;padding:8px 10px;background:rgba(34,197,94,.06);border-left:2px solid #22c55e;border-radius:4px}
+
+/* Analytics */
+.sp-analytics{display:flex;flex-direction:column;gap:10px}
+.sp-analytics-row{display:grid;grid-template-columns:1fr auto auto auto auto;gap:14px;align-items:center;padding:14px;background:var(--bg-1);border:1px solid var(--border);border-radius:10px}
+@media (max-width:720px){.sp-analytics-row{grid-template-columns:1fr 1fr}}
+.sp-a-head{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.sp-a-metric{display:flex;flex-direction:column;align-items:center;min-width:64px}
+.sp-a-metric b{font-size:16px;font-weight:800}
+.sp-a-metric span{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
+.sp-a-toggle{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.sp-a-boost{display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer}
+.sp-a-boost input{accent-color:#22d3ee}
+.sp-a-boost.locked{opacity:.45;cursor:not-allowed}
+.sp-a-kw-btn{font-size:11px;padding:4px 8px;background:transparent;border:1px solid var(--border-2);border-radius:6px;color:var(--text-2);cursor:pointer}
+.sp-a-kw-btn:hover{border-color:var(--amber);color:var(--amber)}
+.sp-a-kws{font-size:10px;color:var(--text-3);grid-column:1/-1;padding-top:4px}
+.sp-a-kws b{color:var(--text-2);font-family:var(--mono)}
+
+/* Annual */
+.sp-annual-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.sp-annual-card{border:1px solid var(--border);border-radius:12px;padding:20px;background:var(--bg-1);display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.sp-annual-card.highlighted{border-color:#22d3ee;box-shadow:0 0 0 1px rgba(34,211,238,.2)}
+.sp-annual-name{font-size:11px;letter-spacing:1.5px;color:var(--text-3);font-weight:700;text-transform:uppercase}
+.sp-annual-price{font-size:26px;font-weight:900;letter-spacing:-1px}
+.sp-annual-price span{font-size:12px;color:var(--text-3);margin-left:2px;font-weight:600}
+.sp-annual-sub{font-size:12px;color:#22c55e;margin-bottom:4px}
+.sp-annual-card .btn{width:100%;margin-top:6px}
+
+/* ═══════════════════════════════════════════════════════════════
+   ABOUT AD-NOW — story page
+═══════════════════════════════════════════════════════════════ */
+.hub-card.c-about{--accent:#a78bfa;--accent-rgb:167,139,250;cursor:pointer}
+.hub-card.c-about h3{font-size:clamp(17px,2.4vw,22px);font-weight:800;letter-spacing:-.4px;margin:4px 0 4px}
+
+.about-wrap{max-width:1100px;margin:0 auto;padding:clamp(20px,3vw,32px) 0}
+.about-hero{text-align:center;padding:clamp(30px,5vw,50px) clamp(18px,3vw,28px);
+  background:radial-gradient(ellipse 70% 120% at 50% 0%,rgba(167,139,250,.12) 0%,transparent 60%);
+  border-radius:var(--r);border:1px solid var(--border);margin-bottom:28px}
+.about-kicker{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--amber);margin-bottom:14px;font-weight:700}
+.about-hero h1{font-size:clamp(26px,4.5vw,42px);font-weight:900;letter-spacing:-1px;line-height:1.15;margin-bottom:16px}
+.about-hero h1 .accent{background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.about-lead{font-size:clamp(14px,1.6vw,17px);color:var(--text-2);max-width:680px;margin:0 auto 24px;line-height:1.55}
+.about-stats{display:flex;justify-content:center;gap:clamp(20px,4vw,48px);flex-wrap:wrap;margin-top:22px}
+.about-stats > div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.about-stats b{font-size:clamp(22px,3vw,32px);font-weight:900;letter-spacing:-.5px;
+  background:linear-gradient(135deg,var(--amber),#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent}
+.about-stats span{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1.2px}
+
+/* ── Live demo frame ── */
+.about-demo{margin-bottom:40px}
+.about-demo-head{text-align:center;margin-bottom:20px}
+.about-demo-head h2{font-size:clamp(20px,3vw,28px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+
+.demo-frame{max-width:720px;margin:0 auto;border:1px solid var(--border);border-radius:16px;overflow:hidden;
+  box-shadow:0 20px 60px -20px rgba(0,0,0,.6);background:#020410}
+.demo-chrome{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#0a0e1a;border-bottom:1px solid var(--border)}
+.demo-dot{width:11px;height:11px;border-radius:50%}
+.demo-dot.r{background:#ef4444}.demo-dot.y{background:#f59e0b}.demo-dot.g{background:#22c55e}
+.demo-addr{font-family:var(--mono);font-size:11px;color:var(--text-3);margin-left:10px}
+.demo-stage{position:relative;height:340px;padding:24px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(ellipse 80% 100% at 50% 50%,rgba(245,158,11,.06) 0%,transparent 60%)}
+
+.demo-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  animation:demoLoadSeq 8s ease-in-out infinite}
+.demo-loading-title{font-size:14px;color:var(--text-2);font-weight:600}
+.demo-dots{display:inline-block;animation:demoDots 1.2s steps(4) infinite;overflow:hidden;vertical-align:bottom;width:0ch}
+.demo-loading-bar{width:200px;height:3px;background:var(--bg-1);border-radius:3px;overflow:hidden}
+.demo-loading-fill{height:100%;background:linear-gradient(90deg,var(--amber),#ec4899);width:0%;
+  animation:demoLoadFill 8s linear infinite}
+
+.demo-card{position:relative;max-width:480px;padding:28px 30px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(236,72,153,.06));
+  border:1px solid rgba(245,158,11,.25);opacity:0;transform:translateY(14px) scale(.96);
+  animation:demoCardSeq 8s cubic-bezier(.16,1,.3,1) infinite}
+.demo-badge{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--amber);font-weight:700;margin-bottom:10px}
+.demo-head{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.demo-body{font-size:14px;color:var(--text-2);line-height:1.55;margin-bottom:16px}
+.demo-cta{display:inline-block;padding:8px 14px;background:var(--amber);color:#020410;border-radius:8px;font-weight:700;font-size:13px}
+.demo-progress{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);border-radius:0 0 14px 14px;overflow:hidden}
+.demo-progress-fill{height:100%;background:linear-gradient(90deg,var(--amber),#ec4899);width:0%;
+  animation:demoProgress 8s linear infinite}
+
+@keyframes demoDots{0%{width:0ch}100%{width:3ch}}
+@keyframes demoLoadFill{0%{width:0%}40%{width:100%}45%,100%{width:100%}}
+@keyframes demoLoadSeq{
+  0%,38%{opacity:1}
+  45%,95%{opacity:0}
+  100%{opacity:1}
+}
+@keyframes demoCardSeq{
+  0%,40%{opacity:0;transform:translateY(14px) scale(.96)}
+  48%,90%{opacity:1;transform:translateY(0) scale(1)}
+  98%,100%{opacity:0;transform:translateY(-8px) scale(.98)}
+}
+@keyframes demoProgress{0%,42%{width:0%}90%{width:100%}100%{width:100%}}
+
+/* ── How it works — 4 steps ── */
+.about-how{margin:40px 0}
+.about-how h2{font-size:clamp(20px,3vw,28px);font-weight:800;letter-spacing:-.5px;margin-bottom:20px;text-align:center}
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.how-step{border:1px solid var(--border);border-radius:14px;padding:22px 18px;background:var(--surface);position:relative;overflow:hidden}
+.how-num{position:absolute;top:-8px;right:16px;font-size:60px;font-weight:900;color:rgba(167,139,250,.08);line-height:1;letter-spacing:-2px}
+.how-step h3{font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px;position:relative;z-index:1}
+.how-step p{font-size:12.5px;color:var(--text-2);line-height:1.55;margin-bottom:14px;position:relative;z-index:1}
+.how-mock{border-radius:10px;padding:12px;background:var(--bg-1);border:1px solid var(--border);position:relative;z-index:1;min-height:90px}
+
+.mock-project .mock-input{font-family:var(--mono);font-size:11px;padding:6px 10px;margin-bottom:6px;background:var(--surface);border-radius:6px;border:1px solid var(--border-2)}
+.mock-project .mock-input.muted{color:var(--text-3)}
+.mock-gen .mock-card{padding:10px 12px;border-radius:8px;background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(236,72,153,.05));border:1px solid rgba(245,158,11,.2)}
+.mock-card-badge{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--amber);margin-bottom:4px}
+.mock-card-head{font-size:13px;font-weight:700;margin-bottom:3px}
+.mock-card-body{font-size:11px;color:var(--text-3);margin-bottom:8px}
+.mock-card-cta{display:inline-block;padding:4px 8px;background:var(--amber);color:#020410;border-radius:5px;font-size:10px;font-weight:700}
+.mock-status{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.mock-pill{font-size:11px;padding:5px 10px;border-radius:20px;background:var(--surface);border:1px solid var(--border-2);color:var(--text-3)}
+.mock-pill.on{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4);color:#22c55e}
+.mock-chart{display:flex;align-items:flex-end;gap:5px;height:72px;padding-top:8px}
+.mock-chart .chart-bar{flex:1;height:var(--h);background:linear-gradient(180deg,var(--amber),#ec4899);border-radius:3px 3px 0 0;opacity:.8;
+  animation:chartRise .8s cubic-bezier(.16,1,.3,1) both}
+.mock-chart .chart-bar:nth-child(1){animation-delay:.05s}
+.mock-chart .chart-bar:nth-child(2){animation-delay:.12s}
+.mock-chart .chart-bar:nth-child(3){animation-delay:.19s}
+.mock-chart .chart-bar:nth-child(4){animation-delay:.26s}
+.mock-chart .chart-bar:nth-child(5){animation-delay:.33s}
+.mock-chart .chart-bar:nth-child(6){animation-delay:.40s}
+.mock-chart .chart-bar:nth-child(7){animation-delay:.47s}
+@keyframes chartRise{from{height:0}to{height:var(--h)}}
+
+/* ── Pricing recap ── */
+/* ═══ SemeClaw story block ═══ */
+.about-story{margin:48px 0;display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(18px,3vw,34px);align-items:center}
+@media (max-width:820px){.about-story{grid-template-columns:1fr}}
+.about-story .story-copy h2{font-size:clamp(22px,3.2vw,30px);font-weight:900;letter-spacing:-.6px;margin-bottom:12px;line-height:1.2}
+.about-story .story-copy h2 .hi{background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.about-story .story-copy p{font-size:14px;color:var(--text-2);line-height:1.65;margin-bottom:12px}
+.about-story .story-copy .story-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.about-story .story-copy .story-chips span{font-size:11px;font-family:var(--mono);letter-spacing:1px;padding:6px 10px;border-radius:20px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);color:#a78bfa}
+.story-frame{position:relative;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface);
+  box-shadow:0 24px 60px rgba(0,0,0,.45),0 0 0 1px rgba(167,139,250,.12) inset;transition:transform .5s ease}
+.story-frame:hover{transform:translateY(-4px)}
+.story-frame .story-chrome{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg-1);border-bottom:1px solid var(--border)}
+.story-frame .story-chrome span.d{width:9px;height:9px;border-radius:50%}
+.story-frame .story-chrome span.r{background:#ef4444}.story-frame .story-chrome span.y{background:#f59e0b}.story-frame .story-chrome span.g{background:#22c55e}
+.story-frame .story-chrome .addr{margin-left:8px;font-family:var(--mono);font-size:10.5px;color:var(--text-3);letter-spacing:.5px}
+.story-frame img{display:block;width:100%;height:auto}
+.story-frame .story-glow{position:absolute;inset:-30%;background:radial-gradient(circle at 30% 40%,rgba(167,139,250,.18),transparent 55%),radial-gradient(circle at 75% 70%,rgba(34,211,238,.14),transparent 55%);pointer-events:none;animation:storyGlow 10s ease-in-out infinite alternate}
+@keyframes storyGlow{0%{transform:translate(-4%,-2%)}100%{transform:translate(4%,2%)}}
+/* value-exchange why */
+.about-why{margin:48px 0;padding:clamp(22px,3vw,34px);border:1px solid var(--border);border-radius:18px;
+  background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(236,72,153,.04));position:relative;overflow:hidden}
+.about-why::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(245,158,11,.12),transparent 50%);pointer-events:none}
+.about-why h2{font-size:clamp(20px,3vw,28px);font-weight:900;letter-spacing:-.5px;margin-bottom:10px;position:relative}
+.about-why .why-lead{font-size:14.5px;color:var(--text-2);line-height:1.65;max-width:720px;position:relative;margin-bottom:20px}
+.about-why .why-row{display:grid;grid-template-columns:1fr 40px 1fr;gap:14px;align-items:center;position:relative}
+@media (max-width:720px){.about-why .why-row{grid-template-columns:1fr;gap:8px}.about-why .why-arrow{transform:rotate(90deg);justify-self:start}}
+.why-side{padding:16px;border-radius:12px;background:var(--surface);border:1px solid var(--border-2)}
+.why-side .why-label{font-size:10px;font-family:var(--mono);letter-spacing:1.5px;color:var(--text-3);margin-bottom:6px}
+.why-side.old .why-label{color:#ef4444}
+.why-side.new .why-label{color:#22c55e}
+.why-side strong{font-size:15px;font-weight:800;display:block;margin-bottom:4px}
+.why-side p{font-size:12.5px;color:var(--text-2);line-height:1.5}
+.why-arrow{font-size:22px;color:var(--amber);text-align:center;animation:whyPulse 1.6s ease-in-out infinite}
+@keyframes whyPulse{0%,100%{transform:translateX(0);opacity:.6}50%{transform:translateX(4px);opacity:1}}
+/* task-tracking triad */
+.about-tracks{margin:40px 0}
+.about-tracks h2{font-size:clamp(20px,3vw,28px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px;text-align:center}
+.about-tracks .section-sub{text-align:center;color:var(--text-3);font-size:13px;margin-bottom:20px}
+.tracks-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.track{padding:18px;border:1px solid var(--border);border-radius:14px;background:var(--surface);position:relative;overflow:hidden;transition:transform .25s,border-color .25s,box-shadow .25s}
+.track:hover{transform:translateY(-3px);border-color:var(--amber);box-shadow:0 14px 32px rgba(0,0,0,.35)}
+.track .track-ico{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:18px;margin-bottom:10px;
+  background:linear-gradient(135deg,rgba(167,139,250,.14),rgba(34,211,238,.1));border:1px solid rgba(167,139,250,.25)}
+.track h3{font-size:15px;font-weight:800;margin-bottom:4px;letter-spacing:-.2px}
+.track p{font-size:12.5px;color:var(--text-2);line-height:1.55}
+/* scroll reveal */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+.reveal[data-delay="1"]{transition-delay:.08s}.reveal[data-delay="2"]{transition-delay:.16s}.reveal[data-delay="3"]{transition-delay:.24s}.reveal[data-delay="4"]{transition-delay:.32s}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.why-arrow,.story-frame .story-glow{animation:none}}
+
+.about-pricing-recap{margin-top:40px;text-align:center}
+.about-pricing-recap h2{font-size:clamp(20px,3vw,28px);font-weight:800;letter-spacing:-.5px;margin-bottom:20px}
+.recap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.recap-card{border:1px solid var(--border);border-radius:14px;padding:22px 20px;background:var(--surface);text-align:left}
+.recap-card.highlighted{border-color:var(--amber);box-shadow:0 0 0 1px rgba(245,158,11,.2),0 10px 30px -10px rgba(245,158,11,.2)}
+.recap-name{font-size:12px;letter-spacing:2px;color:var(--text-3);font-weight:700;text-transform:uppercase;margin-bottom:8px}
+.recap-price{font-size:28px;font-weight:900;letter-spacing:-1px;margin-bottom:14px}
+.recap-price span{font-size:13px;font-weight:600;color:var(--text-3);margin-left:2px}
+.recap-card ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.recap-card li{font-size:12.5px;color:var(--text-2);padding-left:16px;position:relative}
+.recap-card li::before{content:'✓';position:absolute;left:0;color:var(--amber);font-weight:800}
+.about-cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+/* ═══════════════════════════════════════════════════════════════
+   TIER STATUS MINI-CARD (wallet area)
+═══════════════════════════════════════════════════════════════ */
+.tier-status{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;
+  border:1px solid var(--border);background:linear-gradient(135deg,rgba(255,255,255,.02),rgba(255,255,255,.04));
+  font-size:12px;margin-top:8px}
+.tier-status .ts-badge{font-size:16px;line-height:1}
+.tier-status .ts-body{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.tier-status .ts-label{font-weight:700;letter-spacing:-.2px}
+.tier-status .ts-sub{font-size:11px;color:var(--text-3)}
+.tier-status.t-free   .ts-label{color:#94a3b8}
+.tier-status.t-gold   .ts-label{color:#f59e0b}
+.tier-status.t-diamond .ts-label{color:#22d3ee}
+.tier-status.expiring .ts-sub{color:#f59e0b;font-weight:600}
+.tier-status.expired  .ts-sub{color:#ef4444;font-weight:700}
+.tier-status .ts-renew{margin-left:auto;background:transparent;border:1px solid var(--border);
+  color:var(--text);padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;white-space:nowrap}
+.tier-status .ts-renew:hover{border-color:var(--amber);color:var(--amber)}
+
+/* Feature-picker modal — project toggles */
+.fp-list{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;margin:12px 0}
+.fp-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);
+  border-radius:10px;cursor:pointer;transition:border-color .15s}
+.fp-row:hover{border-color:var(--amber)}
+.fp-row.selected{border-color:var(--amber);background:rgba(245,158,11,.05)}
+.fp-row.disabled{opacity:.5;cursor:not-allowed}
+.fp-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--amber);flex-shrink:0}
+.fp-row .fp-name{font-weight:600;font-size:13px}
+.fp-row .fp-desc{font-size:11px;color:var(--text-3);margin-top:2px}
+.fp-count{font-size:12px;color:var(--text-2);margin-bottom:6px}
+.fp-count b{color:var(--amber)}
+
+/* ═══════════════════════════════════════════════════════════════
+   PRICING TIER CARDS — Free / Gold / Diamond
+═══════════════════════════════════════════════════════════════ */
+.pricing-section{max-width:1200px;margin:clamp(32px,6vw,56px) auto clamp(24px,4vw,40px);padding:0 clamp(18px,3vw,28px)}
+.pricing-head{text-align:center;margin-bottom:clamp(24px,4vw,36px)}
+.pricing-head h2{font-size:clamp(24px,4vw,36px);font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.pricing-head h2 .accent{background:linear-gradient(135deg,var(--amber),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.pricing-head .sub{color:var(--text-2);font-size:14px;max-width:560px;margin:0 auto}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,2vw,22px)}
+@media(max-width:900px){.pricing-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}}
+
+.tier-card{
+  position:relative;
+  background:linear-gradient(155deg,rgba(13,27,53,.82),rgba(6,14,33,.95));
+  border:1px solid var(--border);border-radius:18px;
+  padding:clamp(20px,3vw,28px) clamp(20px,3vw,26px);
+  display:flex;flex-direction:column;gap:14px;
+  overflow:hidden;isolation:isolate;
+  transition:transform .4s cubic-bezier(.16,1,.3,1), border-color .3s, box-shadow .4s;
+}
+.tier-card:hover{transform:translateY(-4px);border-color:rgba(var(--tier-rgb,245,158,11),.55);box-shadow:0 20px 60px -20px rgba(var(--tier-rgb,245,158,11),.35)}
+.tier-card .aurora{position:absolute;top:-40%;right:-30%;width:80%;height:160%;z-index:-1;background:radial-gradient(ellipse at center,rgba(var(--tier-rgb),.25),rgba(var(--tier-rgb),0) 60%);filter:blur(24px);opacity:.6;pointer-events:none}
+.tier-card.featured{border-color:rgba(var(--tier-rgb),.45);transform:scale(1.02)}
+.tier-card.featured::before{content:'MOST POPULAR';position:absolute;top:12px;right:12px;font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:4px 10px;border-radius:20px;background:linear-gradient(135deg,var(--amber),var(--pink));color:#000;font-weight:800}
+
+.tier-head{display:flex;align-items:center;gap:10px}
+.tier-badge{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:linear-gradient(135deg,rgba(var(--tier-rgb),.3),rgba(var(--tier-rgb),.08));border:1px solid rgba(var(--tier-rgb),.4)}
+.tier-name{font-size:18px;font-weight:800;letter-spacing:-.3px;color:rgb(var(--tier-rgb))}
+
+.tier-price{display:flex;align-items:baseline;gap:4px;margin-top:4px}
+.tier-price .amt{font-size:42px;font-weight:800;letter-spacing:-1.5px;color:var(--text)}
+.tier-price .per{font-size:13px;color:var(--text-3);font-family:var(--mono)}
+.tier-price .free{font-size:28px;font-weight:800;color:var(--green)}
+
+.tier-credits{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--text-2);font-family:var(--mono);padding:10px 12px;background:rgba(var(--tier-rgb),.08);border:1px solid rgba(var(--tier-rgb),.22);border-radius:8px;line-height:1.35}
+.tier-credits .credits-main b{color:rgb(var(--tier-rgb));font-weight:700}
+.tier-credits .credits-sub{font-size:11px;color:var(--text-3)}
+.tier-credits .credits-sub .bonus{color:var(--green);font-weight:700}
+
+.tier-features{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.tier-features li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text);line-height:1.5}
+.tier-features li span{min-width:0;flex:1}
+.tier-features li::before{content:'✓';color:rgb(var(--tier-rgb));font-weight:800;flex-shrink:0;width:18px;height:18px;display:grid;place-items:center;background:rgba(var(--tier-rgb),.15);border-radius:50%;font-size:11px;margin-top:2px}
+.tier-features li.muted{color:var(--text-3)}
+.tier-features li.muted::before{content:'–';color:var(--text-3);background:transparent}
+
+.tier-cta{margin-top:auto;padding:12px 18px;border-radius:10px;border:1px solid rgba(var(--tier-rgb),.45);background:linear-gradient(135deg,rgba(var(--tier-rgb),.2),rgba(var(--tier-rgb),.06));color:rgb(var(--tier-rgb));font-weight:700;font-size:13px;cursor:pointer;transition:all .25s;text-align:center;letter-spacing:.3px}
+.tier-cta:hover{background:linear-gradient(135deg,rgba(var(--tier-rgb),.32),rgba(var(--tier-rgb),.12));transform:translateY(-1px);box-shadow:0 8px 22px -6px rgba(var(--tier-rgb),.5)}
+.tier-cta.primary{background:linear-gradient(135deg,rgb(var(--tier-rgb)),rgba(var(--tier-rgb),.75));color:#000;border-color:transparent}
+.tier-cta.primary:hover{filter:brightness(1.1)}
+
+/* Free tier — amber */
+.tier-card.tier-free{--tier-rgb:148,163,184}
+/* Gold tier — amber→pink */
+.tier-card.tier-gold{--tier-rgb:245,158,11}
+/* Diamond tier — cyan→violet */
+.tier-card.tier-diamond{--tier-rgb:139,92,246}
 </style>
 </head>
 <body>
+<a href="#main" class="skip-link">Skip to main content</a>
 
 <header>
   <a href="/" class="brand">
@@ -851,7 +1263,7 @@ textarea{min-height:80px;resize:vertical}
   <div id="user-area"></div>
 </header>
 
-<main>
+<main id="main">
 
 <!-- BREADCRUMB (appears when inside a detail pane) -->
 <nav class="hub-bread" id="hub-bread">
@@ -886,6 +1298,15 @@ textarea{min-height:80px;resize:vertical}
       <div class="kicker">Wallet</div>
       <div class="big gradient"><span id="hub-credits">0</span><span class="unit">credits</span></div>
       <div class="desc" id="hub-wallet-sub">$1 = 10 credits · subscribe for 50% bonus (750 credits/mo).</div>
+      <div class="tier-status t-free" id="tier-status" onclick="event.stopPropagation()">
+        <span class="ts-badge" id="ts-badge">✨</span>
+        <div class="ts-body">
+          <div class="ts-label" id="ts-label">Free tier</div>
+          <div class="ts-sub" id="ts-sub">Unlimited days</div>
+        </div>
+        <button class="ts-renew" id="ts-renew" type="button" style="display:none"
+                onclick="event.stopPropagation();renewTier()">Renew</button>
+      </div>
       <div class="hub-actions">
         <button class="chip" type="button" onclick="event.stopPropagation();topup(50)">Subscribe $50/mo</button>
         <button class="chip ghost" type="button" onclick="event.stopPropagation();topup(10)">+ $10</button>
@@ -934,7 +1355,7 @@ textarea{min-height:80px;resize:vertical}
       </div>
       <div class="kicker">Library</div>
       <div class="big"><span id="hub-library-count">0</span><span class="unit">cards</span></div>
-      <div class="desc">Every card you've generated, organised by status. Tap to toggle in or out of rotation.</div>
+      <div class="desc">Every card you've generated, organized by status. Tap to toggle in or out of rotation.</div>
       <div class="hub-meta" id="hub-library-meta">
         <span class="hub-pill g"><span class="dot"></span><b id="hub-enabled-count" class="mr-count">0</b> live</span>
         <span class="hub-pill a"><span class="dot"></span><b id="hub-active-count" class="mr-count">0</b> ready</span>
@@ -958,7 +1379,107 @@ textarea{min-height:80px;resize:vertical}
       </div>
     </div>
 
+    <!-- Special — revenue features -->
+    <div class="hub-card c-special span-6" onclick="showTab('special')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')showTab('special')">
+      <div class="aurora"></div>
+      <div class="row-top">
+        <div class="icon">🚀</div>
+        <span class="hub-chev" aria-hidden="true">→</span>
+      </div>
+      <div class="kicker">Special</div>
+      <h3>Boost &middot; Target &middot; Refer &middot; Analytics</h3>
+      <div class="desc">Priority slots, keyword targeting, referral bonuses and per-card CTR analytics — all in one place.</div>
+    </div>
+
+    <!-- About ad-NOW -->
+    <div class="hub-card c-about span-6" onclick="showTab('about')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')showTab('about')">
+      <div class="aurora"></div>
+      <div class="row-top">
+        <div class="icon">📖</div>
+        <span class="hub-chev" aria-hidden="true">→</span>
+      </div>
+      <div class="kicker">About ad-NOW</div>
+      <h3>How ad-NOW works &mdash; story, demo &amp; playbook</h3>
+      <div class="desc">See exactly how your card reaches thousands of AI engineers during their meeting prep. 90-second read.</div>
+    </div>
+
   </div>
+
+  <!-- ═══ PRICING TIERS ═══ -->
+  <section class="pricing-section" aria-labelledby="pricing-title">
+    <div class="pricing-head">
+      <h2 id="pricing-title">Choose your <span class="accent">plan</span></h2>
+      <p class="sub">Every plan earns daily login credits when you have an active project. Upgrade anytime — credits roll over, bonuses stack.</p>
+    </div>
+    <div class="pricing-grid">
+
+      <!-- FREE -->
+      <article class="tier-card tier-free">
+        <div class="aurora" aria-hidden="true"></div>
+        <div class="tier-head">
+          <div class="tier-badge">✨</div>
+          <div class="tier-name">Free</div>
+        </div>
+        <div class="tier-price"><span class="free">$0</span><span class="per">forever</span></div>
+        <div class="tier-credits">
+          <div class="credits-main"><b>10 credits</b> on sign-up</div>
+          <div class="credits-sub"><span class="bonus">+5 credits/day</span> with an active project</div>
+        </div>
+        <ul class="tier-features">
+          <li><span><b>1</b> active card at a time</span></li>
+          <li><span>Daily login bonus (active project)</span></li>
+          <li><span>Full animated card preview</span></li>
+          <li class="muted"><span>No Spotlight slot</span></li>
+          <li class="muted"><span>Standard generation speed</span></li>
+        </ul>
+        <button class="tier-cta" onclick="startSignUp('free')">Get started free</button>
+      </article>
+
+      <!-- GOLD -->
+      <article class="tier-card tier-gold featured">
+        <div class="aurora" aria-hidden="true"></div>
+        <div class="tier-head">
+          <div class="tier-badge">⭐</div>
+          <div class="tier-name">Gold</div>
+        </div>
+        <div class="tier-price"><span class="amt">$25</span><span class="per">/ month</span></div>
+        <div class="tier-credits">
+          <div class="credits-main"><b>300 credits</b> / month</div>
+          <div class="credits-sub">250 base + <span class="bonus">50 bonus (20%)</span> · +5 credits/day login</div>
+        </div>
+        <ul class="tier-features">
+          <li><span><b>3</b> active cards at a time</span></li>
+          <li><span>Daily login bonus (active project)</span></li>
+          <li><span><b>7-day</b> Spotlight slot each month</span></li>
+          <li><span>Priority card generation</span></li>
+        </ul>
+        <button class="tier-cta primary" onclick="subscribe('gold',25)">Subscribe — $25/mo</button>
+      </article>
+
+      <!-- DIAMOND -->
+      <article class="tier-card tier-diamond">
+        <div class="aurora" aria-hidden="true"></div>
+        <div class="tier-head">
+          <div class="tier-badge">💎</div>
+          <div class="tier-name">Diamond</div>
+        </div>
+        <div class="tier-price"><span class="amt">$50</span><span class="per">/ month</span></div>
+        <div class="tier-credits">
+          <div class="credits-main"><b>750 credits</b> / month</div>
+          <div class="credits-sub">500 base + <span class="bonus">250 bonus (50%)</span> · +5 credits/day per project</div>
+        </div>
+        <ul class="tier-features">
+          <li><span><b>5</b> active cards at a time</span></li>
+          <li><span>Daily bonus <b>per project</b>, not per account</span></li>
+          <li><span><b>Full-month</b> Spotlight anchor</span></li>
+          <li><span>All voices + voice-clone slot</span></li>
+          <li><span>Priority generation + analytics</span></li>
+        </ul>
+        <button class="tier-cta primary" onclick="subscribe('diamond',50)">Subscribe — $50/mo</button>
+      </article>
+
+    </div>
+  </section>
 
   <!-- ═══ SUBSCRIBER SPOTLIGHT ═══ -->
   <section class="spot-section" aria-labelledby="spot-title">
@@ -980,6 +1501,29 @@ textarea{min-height:80px;resize:vertical}
 
 <!-- LOGIN STATE -->
 <section id="login-pane" class="login-wrap">
+  <div class="login-hero">
+    <span class="tag"><span class="dot"></span>Ad-NOW · by SemeClaw</span>
+    <h2>30-second ad cards that play<br/>before every SemeClaw meeting.</h2>
+    <p class="lead">Ad-NOW turns the pre-meeting loading screen into a <b>captive-audience channel</b>. Your card renders fullscreen for the first 30 seconds while every participant waits for the war-room to boot — no skip button, no scroll, pure attention.</p>
+    <div class="login-perks">
+      <div class="login-perk"><span class="ic">⚡</span><div><b>Ship in 2 minutes</b>Paste a headline, pick a color, done. AI generates the rest.</div></div>
+      <div class="login-perk"><span class="ic">🎯</span><div><b>Real impressions</b>Counted server-side at slide fetch — impossible to fake.</div></div>
+      <div class="login-perk"><span class="ic">💎</span><div><b>Diamond perks</b>Priority boost, spotlight all month, daily-login credits.</div></div>
+      <div class="login-perk"><span class="ic">🎁</span><div><b>Referral rewards</b>+20 credits per sign-up, +10% of their spend every Monday.</div></div>
+    </div>
+    <div class="login-stats" aria-hidden="true">
+      <div><b>30s</b><span>Full-screen airtime</span></div>
+      <div><b>100%</b><span>Viewability</span></div>
+      <div><b>$1 = 10</b><span>Credits</span></div>
+      <div><b>10%</b><span>Weekly referral bonus</span></div>
+    </div>
+    <div class="cta-hint">Sign in to claim <b style="color:var(--amber)">10 free credits</b> <span class="arrow">→</span></div>
+    <div class="login-demo" aria-hidden="true">
+      <div class="lc"><span class="badge">⚡ Featured</span><h5>Launch your SaaS</h5><p>Ship a landing page in minutes — no code required.</p></div>
+      <div class="lc"><span class="badge">💎 Spotlight</span><h5>Hire 10× faster</h5><p>AI screens candidates while you sleep. Try free.</p></div>
+      <div class="lc"><span class="badge">🎯 Targeted</span><h5>Your ad here</h5><p>Reach thousands of war-room participants daily.</p></div>
+    </div>
+  </div>
   <div class="login-box">
     <div class="brand-icon brand-icon-center">📣</div>
     <h1>Ad NOW</h1>
@@ -992,7 +1536,8 @@ textarea{min-height:80px;resize:vertical}
       <svg viewBox="0 0 16 16" fill="#fff"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
       Continue with GitHub
     </button>
-    <p class="auth-hint">Authentication handled by Supabase. We never see your password.</p>
+    <div class="login-bonus">🎁 New advertisers get <b>10 free credits</b> on sign-up — enough for your first AI-generated card.</div>
+    <p class="auth-hint">Authentication is handled by Supabase. We never see your password.</p>
   </div>
 </section>
 
@@ -1008,7 +1553,7 @@ textarea{min-height:80px;resize:vertical}
         <button class="btn btn-primary" onclick="topup(50)">Subscribe $50/mo</button>
         <button class="btn" onclick="topup(10)">+ $10</button>
       </div>
-      <p class="helper helper-gap">$1 = 10 credits · Subscription gets 50% bonus (750 credits/mo).</p>
+      <p class="helper helper-gap">$1 = 10 credits — Subscribers get a 50% bonus (750 credits/mo).</p>
     </div>
 
     <div class="card span-8">
@@ -1032,7 +1577,7 @@ textarea{min-height:80px;resize:vertical}
         </div>
         <button class="btn btn-primary" onclick="topup(10)">Add card</button>
       </div>
-      <p class="helper helper-gap">Cards are stored securely by Stripe. We never see your card number.</p>
+      <p class="helper helper-gap">Cards are stored securely by Stripe. We never see your full card number.</p>
     </div>
 
   </div>
@@ -1096,6 +1641,282 @@ textarea{min-height:80px;resize:vertical}
   </div>
 </section>
 
+<!-- ═══ SPECIAL — revenue features ═══ -->
+<section id="special-pane" class="tab-pane">
+  <div class="section-head">
+    <div>
+      <h2 class="section-title">🚀 Special</h2>
+      <p class="section-sub">Revenue levers — squeeze more from every credit.</p>
+    </div>
+    <div id="special-tier-badge" class="tier-badge-inline t-free">Free tier</div>
+  </div>
+
+  <!-- Referral -->
+  <section class="sp-block">
+    <header>
+      <h3>🎁 Referrals</h3>
+      <p>Share your link. When someone signs up with your code, <b>you get +20 credits</b> and they get +10.</p>
+    </header>
+    <div class="sp-referral">
+      <div class="sp-ref-code">
+        <label>Your code</label>
+        <div class="sp-ref-row">
+          <code id="sp-ref-code">—</code>
+          <button class="btn" onclick="copyRefCode()">Copy code</button>
+          <button class="btn btn-ghost" onclick="copyRefLink()">Copy link</button>
+        </div>
+      </div>
+      <div class="sp-ref-stats">
+        <div><b id="sp-ref-count">0</b><span>referred</span></div>
+        <div><b id="sp-ref-earned">0</b><span>credits earned</span></div>
+      </div>
+    </div>
+    <div class="sp-apply-ref" id="sp-apply-ref-wrap">
+      <label>Got a code? Enter it to get +10 credits:</label>
+      <div class="sp-ref-row">
+        <input id="sp-apply-code" placeholder="e.g. a7f3b2c9" maxlength="16"/>
+        <button class="btn btn-primary" onclick="applyRefCode()">Apply</button>
+      </div>
+      <div class="sp-apply-msg" id="sp-apply-msg"></div>
+    </div>
+
+    <!-- Referral tree -->
+    <section class="sp-tree">
+      <div class="sp-tree-head">
+        <h4>🌳 Your referral tree</h4>
+        <div class="sp-tree-earned">
+          Weekly bonus paid: <b id="sp-tree-earned">0</b> credits
+        </div>
+      </div>
+      <div id="sp-tree-list" class="sp-tree-list">
+        <div class="sp-tree-empty">No referrals yet — share your link to start earning.</div>
+      </div>
+      <div class="sp-tree-note">
+        <b>10% weekly bonus.</b> Every Monday at 00:00 UTC we sum what your referred users spent in the last 7 days and credit your wallet with 10% of it — automatic, instant.
+      </div>
+    </section>
+  </section>
+
+  <!-- Card analytics + boost/targeting -->
+  <section class="sp-block">
+    <header>
+      <h3>📈 Card performance</h3>
+      <p>Impressions, clicks, CTR. Toggle <b>Priority boost</b> (Diamond) or set <b>Target keywords</b> (Gold+) per card.</p>
+    </header>
+    <div id="sp-analytics" class="sp-analytics">
+      <div class="empty">Loading analytics…</div>
+    </div>
+  </section>
+
+  <!-- Annual plans -->
+  <section class="sp-block">
+    <header>
+      <h3>💸 Annual plans — 2 months free</h3>
+      <p>Prepay the year. Same benefits, lower unit cost.</p>
+    </header>
+    <div class="sp-annual-grid">
+      <div class="sp-annual-card">
+        <div class="sp-annual-name">Gold · Annual</div>
+        <div class="sp-annual-price">$250<span>/yr</span></div>
+        <div class="sp-annual-sub">Instead of $300 — save $50</div>
+        <button class="btn btn-primary" onclick="subscribeAnnual('gold', 250)">Upgrade</button>
+      </div>
+      <div class="sp-annual-card highlighted">
+        <div class="sp-annual-name">Diamond · Annual</div>
+        <div class="sp-annual-price">$500<span>/yr</span></div>
+        <div class="sp-annual-sub">Instead of $600 — save $100</div>
+        <button class="btn btn-primary" onclick="subscribeAnnual('diamond', 500)">Upgrade</button>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ═══ ABOUT AD-NOW — story, demo, playbook ═══ -->
+<section id="about-pane" class="tab-pane">
+  <article class="about-wrap">
+    <header class="about-hero">
+      <div class="about-kicker">AD-NOW · BY SEMECLAW</div>
+      <h1>Your project, <span class="accent">in front of engineers</span> — exactly when they're paying attention.</h1>
+      <p class="about-lead">
+        ad-NOW is the advertising layer for SemeClaw. Every time a developer or AI team spins up a meeting,
+        they watch a short Sponsored Spotlight while their agents assemble. That's your slot.
+      </p>
+      <div class="about-stats">
+        <div><b>4.2s</b><span>avg. attention per card</span></div>
+        <div><b>1&nbsp;credit</b><span>= 1 impression</span></div>
+        <div><b>3× / 4h</b><span>frequency cap per viewer</span></div>
+      </div>
+    </header>
+
+    <!-- ── What is SemeClaw — real screenshot + story ── -->
+    <section class="about-story">
+      <div class="story-copy reveal">
+        <h2>Meet <span class="hi">SemeClaw</span> — the war room where your product ideas get built.</h2>
+        <p>SemeClaw is an agent orchestration platform. You launch a pipeline, a crew of AI agents (Research · Architect · Strategist · Coder · Writer · Paperclip) assembles in a meeting room, and your project gets planned, coded, and shipped — live, while you watch.</p>
+        <p>Every meeting starts with a short prep window while the agents connect to the droplet fleet. <b>That prep window is the slot ad-NOW fills.</b> Developers who are actively shipping see your card at the exact moment they're open to discovering new tools.</p>
+        <div class="story-chips">
+          <span>AGENT ORCHESTRATION</span><span>LIVE PIPELINES</span><span>MEETING ROOMS</span><span>DROPLET FLEET</span>
+        </div>
+      </div>
+      <div class="story-frame reveal" data-delay="1">
+        <div class="story-glow"></div>
+        <div class="story-chrome"><span class="d r"></span><span class="d y"></span><span class="d g"></span><span class="addr">semeclaw.fly.dev · War Room</span></div>
+        <img src="assets/semeclaw-warroom.png" alt="SemeClaw War Room — pipelines, droplet fleet, live activity, meeting room" loading="lazy">
+      </div>
+    </section>
+
+    <!-- ── How tasks are tracked ── -->
+    <section class="about-tracks">
+      <h2>How tasks get tracked, live</h2>
+      <p class="section-sub">Every pipeline leaves a trail. Nothing runs in the dark.</p>
+      <div class="tracks-grid">
+        <div class="track reveal"><div class="track-ico">📊</div><h3>Metrics panel</h3><p>Pipelines run, success rate, agents online, droplets healthy — at a glance on the War Room home.</p></div>
+        <div class="track reveal" data-delay="1"><div class="track-ico">⚡</div><h3>Live Activity</h3><p>Every agent step streams in as it happens: research queries, architect decisions, code pushes, writer drafts.</p></div>
+        <div class="track reveal" data-delay="2"><div class="track-ico">📚</div><h3>Research Reports</h3><p>Every meeting produces a report — saved to the library so you can revisit the reasoning at any time.</p></div>
+        <div class="track reveal" data-delay="3"><div class="track-ico">🛰️</div><h3>Droplet Fleet</h3><p>Dexter, Memo, Sienna, Nano and the Mac Studio Core show status in real time — you see where the work is running.</p></div>
+      </div>
+    </section>
+
+    <!-- ── Why ad-NOW exists ── -->
+    <section class="about-why reveal">
+      <h2>Why these ads exist</h2>
+      <p class="why-lead">When you launch a pipeline on SemeClaw, agents take 30–90 seconds to assemble. That window used to be staring at a loading bar. ad-NOW turns it into <b>discovery time</b> — instead of waiting, you find a tool, a library, or a project adjacent to what you're already building.</p>
+      <div class="why-row">
+        <div class="why-side old">
+          <div class="why-label">BEFORE</div>
+          <strong>Blank loading bar</strong>
+          <p>Dead 60 seconds. You refresh Twitter. Attention leaves the meeting.</p>
+        </div>
+        <div class="why-arrow">→</div>
+        <div class="why-side new">
+          <div class="why-label">WITH AD-NOW</div>
+          <strong>Sponsored Spotlight</strong>
+          <p>One card, one idea — a tool close to your project. You stay in flow, you learn something, the builder earns a real impression.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Live animated demo — the actual meeting-room card in motion ── -->
+    <section class="about-demo">
+      <div class="about-demo-head">
+        <h2>Live preview — what viewers see</h2>
+        <p class="section-sub">This is the real card shell used by SemeClaw meeting rooms. Watch it cycle.</p>
+      </div>
+      <div class="demo-frame">
+        <div class="demo-chrome">
+          <span class="demo-dot r"></span><span class="demo-dot y"></span><span class="demo-dot g"></span>
+          <span class="demo-addr">semeclaw.fly.dev · Meeting prep</span>
+        </div>
+        <div class="demo-stage">
+          <div class="demo-loading">
+            <div class="demo-loading-title">Assembling your team<span class="demo-dots">...</span></div>
+            <div class="demo-loading-bar"><div class="demo-loading-fill"></div></div>
+          </div>
+          <div class="demo-card">
+            <div class="demo-badge">▸ Sponsored Spotlight</div>
+            <div class="demo-head" id="demo-head">Nervix</div>
+            <div class="demo-body" id="demo-body">The orchestration layer for AI agents — deploy, monitor, scale.</div>
+            <div class="demo-cta">Visit nervix.ai →</div>
+            <div class="demo-progress"><div class="demo-progress-fill"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── How it works — 4 steps ── -->
+    <section class="about-how">
+      <h2>How it works</h2>
+      <div class="how-grid">
+        <div class="how-step">
+          <div class="how-num">1</div>
+          <h3>Create a project</h3>
+          <p>Add your GitHub repo, pick an ad goal, target audience — 60 seconds.</p>
+          <div class="how-mock mock-project">
+            <div class="mock-input">✎ Nervix</div>
+            <div class="mock-input">github.com/nervix/core</div>
+            <div class="mock-input muted">Reach AI engineers shipping agents</div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">2</div>
+          <h3>Generate the card</h3>
+          <p>ad-NOW composes the headline + body + CTA. Edit anytime (3 edits per card per day).</p>
+          <div class="how-mock mock-gen">
+            <div class="mock-card">
+              <div class="mock-card-badge">▸ Featured</div>
+              <div class="mock-card-head">Orchestrate agents</div>
+              <div class="mock-card-body">Deploy and monitor agents at scale</div>
+              <div class="mock-card-cta">Try it →</div>
+            </div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">3</div>
+          <h3>Enable → it goes live</h3>
+          <p>Flip a card to <b>Enabled</b> and it joins the rotation. Your tier caps how many cards run at once.</p>
+          <div class="how-mock mock-status">
+            <span class="mock-pill on">● Enabled</span>
+            <span class="mock-pill">○ Inactive</span>
+            <span class="mock-pill">○ Paused</span>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">4</div>
+          <h3>Earn impressions</h3>
+          <p>Every meeting room pull = 1 credit spent, 1 view logged. Frequency-capped so viewers aren't spammed.</p>
+          <div class="how-mock mock-chart">
+            <div class="chart-bar" style="--h:40%"></div>
+            <div class="chart-bar" style="--h:65%"></div>
+            <div class="chart-bar" style="--h:50%"></div>
+            <div class="chart-bar" style="--h:85%"></div>
+            <div class="chart-bar" style="--h:70%"></div>
+            <div class="chart-bar" style="--h:95%"></div>
+            <div class="chart-bar" style="--h:78%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Pricing recap + CTA ── -->
+    <section class="about-pricing-recap">
+      <h2>Pick your tier — start free</h2>
+      <div class="recap-grid">
+        <div class="recap-card">
+          <div class="recap-name">Free</div>
+          <div class="recap-price">$0</div>
+          <ul>
+            <li>10 credits on sign-up</li>
+            <li>+5 / day with an active project</li>
+            <li>1 live card</li>
+          </ul>
+        </div>
+        <div class="recap-card highlighted">
+          <div class="recap-name">Gold</div>
+          <div class="recap-price">$25<span>/mo</span></div>
+          <ul>
+            <li>300 credits/mo (250 + 50 bonus)</li>
+            <li>3 live cards</li>
+            <li>7-day Spotlight slot</li>
+          </ul>
+        </div>
+        <div class="recap-card">
+          <div class="recap-name">Diamond</div>
+          <div class="recap-price">$50<span>/mo</span></div>
+          <ul>
+            <li>750 credits/mo (500 + 250 bonus)</li>
+            <li>5 live cards · +5 credits/day per project</li>
+            <li>Full-month Spotlight anchor</li>
+          </ul>
+        </div>
+      </div>
+      <div class="about-cta-row">
+        <button class="btn btn-primary" onclick="showTab('projects')">Create your first project →</button>
+        <button class="btn btn-ghost" onclick="showTab('hub')">Back to hub</button>
+      </div>
+    </section>
+  </article>
+</section>
+
 <!-- DETAILS PANE (inline big expanded-card view — replaces the old pop-up) -->
 <section id="details-pane" class="tab-pane">
   <article class="details-card" role="article" aria-labelledby="details-heading">
@@ -1118,11 +1939,11 @@ textarea{min-height:80px;resize:vertical}
     <div class="gen-orb"><div class="gen-orb-core">✨</div></div>
     <div>
       <div class="gen-title" id="gen-title">Composing your card…</div>
-      <div class="gen-sub" id="gen-sub">We read your inputs, fetch your repo + site, and build a 25-second animated ad.</div>
+      <div class="gen-sub" id="gen-sub">We read your inputs, fetch your repo + site, and build a 30-second animated ad.</div>
     </div>
     <div class="gen-steps" id="gen-steps">
       <div class="gen-step" data-step="1"><span class="gen-tick" data-n="1"></span><span>Reading your project inputs</span></div>
-      <div class="gen-step" data-step="2"><span class="gen-tick" data-n="2"></span><span>Analysing GitHub repo</span></div>
+      <div class="gen-step" data-step="2"><span class="gen-tick" data-n="2"></span><span>Analyzing GitHub repo</span></div>
       <div class="gen-step" data-step="3"><span class="gen-tick" data-n="3"></span><span>Crawling your website</span></div>
       <div class="gen-step" data-step="4"><span class="gen-tick" data-n="4"></span><span>Extracting key phrases</span></div>
       <div class="gen-step" data-step="5"><span class="gen-tick" data-n="5"></span><span>Composing hook + headline</span></div>
@@ -1154,6 +1975,14 @@ textarea{min-height:80px;resize:vertical}
         <input name="webpage_url" id="proj-webpage" type="url" placeholder="https://yourproduct.com"/>
       </div>
       <div>
+        <label>Problem solved * <span class="label-hint">(1 sentence — the pain this removes)</span></label>
+        <textarea name="problem_solved" id="proj-problem" required maxlength="200" placeholder="e.g. Ops teams waste 4 hours a week chasing stale incident reports across 6 tools."></textarea>
+      </div>
+      <div>
+        <label>Tagline <span class="label-hint">(optional — short, punchy, headline voice)</span></label>
+        <input name="tagline" id="proj-tagline" maxlength="80" placeholder="e.g. Ship landing pages in minutes, not weeks."/>
+      </div>
+      <div>
         <label>Description <span class="label-hint">(optional — auto-generated from GitHub + website if left empty)</span></label>
         <textarea name="description" id="proj-desc" placeholder="What does the product do? Who uses it? Why does it matter? Leave blank to let the model infer this from your repo and site."></textarea>
       </div>
@@ -1164,16 +1993,6 @@ textarea{min-height:80px;resize:vertical}
       <div>
         <label>Target audience</label>
         <input name="target_audience" id="proj-audience" placeholder="e.g. AI engineers shipping production agents"/>
-      </div>
-      <div>
-        <label>Voice <span class="label-hint">(for ad narration)</span></label>
-        <select name="voice" id="proj-voice" class="voice-select">
-          <option value="af_bella">Bella — Warm female narrator (default)</option>
-          <option value="af_nicole">Nicole — Clear female, technical</option>
-          <option value="bf_emma">Emma — British female, professional</option>
-          <option value="am_adam">Adam — American male, authoritative</option>
-          <option value="bm_george">George — British male, formal</option>
-        </select>
       </div>
       <div>
         <label>Notes <span class="label-hint">(private — not shown on the card)</span></label>
@@ -1240,32 +2059,6 @@ const KOKORO_VOICES = {
   am_adam: 'Adam — American male',
   bm_george: 'George — British male',
 };
-let ttsAudio = null;
-async function playTTS(text, voice='af_bella'){
-  if(!text) return;
-  if(ttsAudio){ ttsAudio.pause(); ttsAudio = null; }
-  document.querySelectorAll('.tts-btn').forEach(b => b.textContent = '🔊');
-  const btn = event?.target;
-  try{
-    const url = `/api/tts?text=${encodeURIComponent(text)}&speaker=${encodeURIComponent(voice)}&lang=en`;
-    const r = await fetch(url);
-    if(!r.ok || r.status === 204) throw new Error('TTS unavailable');
-    const blob = await r.blob();
-    const audioUrl = URL.createObjectURL(blob);
-    ttsAudio = new Audio(audioUrl);
-    ttsAudio.onended = () => { if(btn) btn.textContent = '🔊'; };
-    ttsAudio.onerror = () => { if(btn) btn.textContent = '🔊'; };
-    ttsAudio.play();
-    if(btn) btn.textContent = '⏸';
-  }catch(e){ console.warn('[tts]', e); alert('Voice narration unavailable. Try again later.'); }
-}
-function playDraftTTS(voice='af_bella'){
-  const d = state.lastDraft;
-  if(!d) return;
-  const text = `${d.headline || ''}. ${d.body || ''}`;
-  playTTS(text, voice);
-}
-
 // ── Generation config ──
 const GEN_CONFIG = {
   ollamaUrl: 'https://sims-testimonials-rent-innocent.trycloudflare.com',
@@ -1355,7 +2148,7 @@ async function boot(){
   loadAll();
 }
 
-const TAB_TITLES = { hub:'Hub', profile:'Profile & Wallet', projects:'Projects', library:'Library', history:'History', details:'Spotlight · Details', generate:'Generating card' };
+const TAB_TITLES = { hub:'Hub', profile:'Profile & Wallet', projects:'Projects', library:'Library', history:'History', special:'Special', about:'About ad-NOW', details:'Spotlight · Details', generate:'Generating card' };
 function showTab(name){
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id===`${name}-pane`));
   const bread = document.getElementById('hub-bread');
@@ -1366,12 +2159,217 @@ function showTab(name){
     document.getElementById('hub-bread-here').textContent = TAB_TITLES[name] || name;
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Trigger scroll-reveal for newly shown pane
+  requestAnimationFrame(() => armReveal());
 }
+
+// ── Scroll-reveal (IntersectionObserver) ────────────────────────────────
+let _revealIO = null;
+function armReveal(){
+  if(!_revealIO){
+    if(!('IntersectionObserver' in window)){
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+      return;
+    }
+    _revealIO = new IntersectionObserver(entries => {
+      entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); _revealIO.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  }
+  document.querySelectorAll('.reveal:not(.in)').forEach(el => _revealIO.observe(el));
+}
+document.addEventListener('DOMContentLoaded', () => armReveal());
 
 function advId(){ return session?.user?.id || 'demo'; }
 const fmt = n => new Intl.NumberFormat().format(n||0);
 
-async function loadAll(){ await Promise.all([loadWallet(), loadProjects(), loadLibrary(), loadSpotlight(), loadHistory()]); }
+async function loadAll(){ await Promise.all([loadWallet(), loadProjects(), loadLibrary(), loadSpotlight(), loadHistory(), loadSpecial()]); autoApplyPendingRef(); }
+
+// ── SPECIAL tab ─────────────────────────────────────────────────────────
+async function loadSpecial(){
+  try{
+    const r = await fetch(`/api/advertiser/${advId()}/special`);
+    if(!r.ok) return;
+    const d = await r.json();
+    state.special = d;
+    // Tier badge
+    const tier = (d.tier || 'free').toLowerCase();
+    const badge = document.getElementById('special-tier-badge');
+    if(badge){
+      badge.classList.remove('t-free','t-gold','t-diamond');
+      badge.classList.add('t-' + tier);
+      badge.textContent = tier[0].toUpperCase()+tier.slice(1)+' tier';
+    }
+    // Referral code
+    document.getElementById('sp-ref-code').textContent = d.referral_code || '—';
+    document.getElementById('sp-ref-count').textContent = fmt(d.referred_count || 0);
+    document.getElementById('sp-ref-earned').textContent = fmt(d.referred_earned || 0);
+    // Hide the "apply a code" widget if already referred
+    if(d.referred_by){
+      document.getElementById('sp-apply-ref-wrap').style.display = 'none';
+    }
+    // Referral tree
+    renderRefTree(d.referred_users || [], d.weekly_bonus_paid || 0);
+    // Analytics
+    renderAnalytics(d.slides || [], tier);
+  }catch(e){ console.warn('[special]', e); }
+}
+
+function renderRefTree(users, weeklyPaid){
+  const list = document.getElementById('sp-tree-list');
+  const earned = document.getElementById('sp-tree-earned');
+  if(!list) return;
+  if(earned) earned.innerHTML = `Bonuses paid out: <b>${fmt(weeklyPaid||0)}</b> credits`;
+  if(!users.length){
+    list.innerHTML = `<div class="sp-tree-empty">No referrals yet — share your link to start earning.</div>`;
+    return;
+  }
+  const safe = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  list.innerHTML = users.map(u => {
+    const bonus = Math.floor((u.week_spent || 0) * 0.10);
+    return `<div class="sp-tree-row">
+      <span class="sp-tree-email">${safe(u.email || u.id_short || '—')}</span>
+      <span class="sp-tree-spent">${fmt(u.week_spent||0)} spent / wk</span>
+      <span class="sp-tree-bonus">+${fmt(bonus)} bonus Mon</span>
+    </div>`;
+  }).join('');
+}
+
+function renderAnalytics(slides, tier){
+  const box = document.getElementById('sp-analytics');
+  if(!slides.length){
+    box.innerHTML = `<div class="empty">No cards yet. Generate one in <b>Projects</b> and it'll show here.</div>`;
+    return;
+  }
+  const isDiamond = tier === 'diamond';
+  const safe = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  box.innerHTML = slides.map(s => {
+    const kws = (s.keywords || []).join(', ');
+    const boostAttrs = isDiamond ? '' : 'disabled';
+    const boostClass = isDiamond ? '' : 'locked';
+    const lockTitle  = isDiamond ? '' : 'title="Priority boost is Diamond-only"';
+    return `<div class="sp-analytics-row">
+      <div class="sp-a-head">${safe(s.headline || '—')}</div>
+      <div class="sp-a-metric"><b>${fmt(s.impressions||0)}</b><span>Views</span></div>
+      <div class="sp-a-metric"><b>${fmt(s.clicks||0)}</b><span>Clicks</span></div>
+      <div class="sp-a-metric"><b>${(s.ctr_pct||0)}%</b><span>CTR</span></div>
+      <div class="sp-a-toggle">
+        <label class="sp-a-boost ${boostClass}" ${lockTitle}>
+          <input type="checkbox" ${s.priority?'checked':''} ${boostAttrs}
+                 onchange="toggleBoost('${s.slide_id}', this.checked, this)"/> Priority
+        </label>
+        <button class="sp-a-kw-btn" onclick="editKeywords('${s.slide_id}')">Keywords</button>
+      </div>
+      ${kws ? `<div class="sp-a-kws">Targeting: <b>${safe(kws)}</b></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function toggleBoost(slideId, enabled, el){
+  try{
+    const r = await fetch(`/api/advertiser/${advId()}/slides/${slideId}/boost`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({enabled})
+    });
+    if(!r.ok){
+      const d = await r.json();
+      alert(d.error || 'Boost failed');
+      if(el) el.checked = !enabled;
+    }
+  }catch(e){ alert(e.message); if(el) el.checked = !enabled; }
+}
+
+async function editKeywords(slideId){
+  const current = (state.special?.slides || []).find(s => s.slide_id === slideId)?.keywords || [];
+  const input = prompt('Target keywords (comma-separated, up to 10). Only meetings whose topic matches any of these keywords will see this card.\n\nLeave empty to show to everyone.', current.join(', '));
+  if(input === null) return;
+  try{
+    const r = await fetch(`/api/advertiser/${advId()}/slides/${slideId}/targeting`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({keywords: input})
+    });
+    const d = await r.json();
+    if(!r.ok){ alert(d.error || 'Targeting failed'); return; }
+    loadSpecial();
+  }catch(e){ alert(e.message); }
+}
+
+function copyRefCode(){
+  const code = document.getElementById('sp-ref-code').textContent;
+  if(!code || code === '—') return;
+  navigator.clipboard.writeText(code);
+  toast('Code copied');
+}
+function copyRefLink(){
+  const code = document.getElementById('sp-ref-code').textContent;
+  if(!code || code === '—') return;
+  const url = `${location.origin}/advertiser?ref=${encodeURIComponent(code)}`;
+  navigator.clipboard.writeText(url);
+  toast('Link copied');
+}
+function toast(msg){
+  let el = document.getElementById('sp-toast');
+  if(!el){ el = document.createElement('div'); el.id='sp-toast';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.setAttribute('aria-atomic', 'true');
+    el.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-1);border:1px solid var(--amber);color:var(--amber);padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .2s';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.opacity = '0', 2000);
+}
+
+async function applyRefCode(){
+  const code = (document.getElementById('sp-apply-code').value || '').trim();
+  const msg = document.getElementById('sp-apply-msg');
+  msg.className = 'sp-apply-msg';
+  msg.textContent = '';
+  if(!code){ msg.className='sp-apply-msg err'; msg.textContent='Enter a code'; return; }
+  try{
+    const r = await fetch(`/api/advertiser/${advId()}/apply-referral`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({code})
+    });
+    const d = await r.json();
+    if(!r.ok || !d.ok){ msg.className='sp-apply-msg err'; msg.textContent = d.error || 'Failed'; return; }
+    msg.className='sp-apply-msg ok';
+    msg.textContent = `+${d.granted_you} credits applied — thanks!`;
+    sessionStorage.removeItem('pending_ref');
+    await loadWallet();
+    await loadSpecial();
+  }catch(e){ msg.className='sp-apply-msg err'; msg.textContent = e.message; }
+}
+
+// Auto-apply ?ref=XXXX from URL, or a pending one stashed pre-signin.
+function autoApplyPendingRef(){
+  try{
+    const u = new URL(location.href);
+    const ref = u.searchParams.get('ref');
+    if(ref) sessionStorage.setItem('pending_ref', ref);
+    const pending = sessionStorage.getItem('pending_ref');
+    if(pending && session?.user){
+      const code = document.getElementById('sp-apply-code');
+      if(code) code.value = pending;
+      applyRefCode();
+    }
+  }catch(e){}
+}
+
+function subscribeAnnual(plan, usd){
+  if(!session){
+    try{ sessionStorage.setItem('pending_plan', JSON.stringify({plan:plan+'_annual', usd})); }catch(_){}
+    return signIn('google');
+  }
+  // Reuse the checkout endpoint with a special tier string the backend maps.
+  fetch(`/api/advertiser/${advId()}/checkout`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({tier: plan + '_annual'})
+  }).then(r => r.json()).then(d => {
+    if(d.url) location.href = d.url; else alert(d.error || 'Annual checkout not configured yet');
+  });
+}
 
 async function loadSpotlight(){
   const grid = document.getElementById('spot-grid');
@@ -1415,41 +2413,95 @@ async function loadSpotlight(){
   grid.innerHTML = live.map(it => renderSpotlight(it, it.ttl_days || ttl)).join('');
 }
 
-// Prompt the user for project details and insert into adclaw_spotlight via RPC.
+// Open the feature-picker modal: list user's projects, toggle which to feature,
+// capped by their tier (Free=0, Gold=3, Diamond=5).
+const TIER_CAPS = { free: 0, gold: 3, diamond: 5 };
+
 async function featureMyProject(){
   if(!supa || !session){ alert('Sign in first.'); return; }
-  // Must be subscribed
-  let subbed = false;
-  try{
-    const r = await fetch(`/api/advertiser/${advId()}/wallet`);
-    const d = await r.json();
-    subbed = !!d.is_subscribed;
-  }catch(e){}
-  if(!subbed){
-    if(confirm('Featuring a project is a benefit of the $50/mo subscription. Subscribe now?')) topup(50);
+  const tier = (state.tier || 'free').toLowerCase();
+  if(tier === 'free'){
+    if(confirm('Featuring projects requires Gold ($25/mo) or Diamond ($50/mo). View plans?')){
+      document.querySelector('.pricing-section')?.scrollIntoView({ behavior:'smooth' });
+    }
     return;
   }
-  // Prefill from the user's first project if any
-  const first = (state.projects && state.projects[0]) || {};
-  const name = prompt('Project name', first.name || '');
-  if(!name) return;
-  const tagline = prompt('Short tagline (max 80 chars)', first.ad_goal?.slice(0,80) || '') || '';
-  const url = prompt('Link (https://…)', first.github_url || '');
-  if(!url || !/^https?:\/\//i.test(url)){ alert('URL must start with https://'); return; }
-  const description = prompt('One-liner description', first.description?.slice(0,200) || '') || '';
-  const { data, error } = await supa.rpc('adclaw_feature_project', {
-    p_name: name,
-    p_tagline: tagline,
-    p_description: description,
-    p_url: url,
-    p_logo_letter: (name[0]||'?').toUpperCase(),
-    p_gradient_from: '#22d3ee',
-    p_gradient_to:   '#8b5cf6',
-    p_accent_rgb:    '34,211,238'
-  });
-  if(error){ alert('Spotlight failed: ' + error.message); return; }
-  await loadSpotlight();
-  document.getElementById('spot-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Make sure projects are loaded
+  if(!state.projects || !state.projects.length) await loadProjects();
+  // Get current spotlight selection for this user
+  const currentlyFeatured = new Set();
+  try{
+    const { data } = await supa
+      .from('adclaw_spotlight')
+      .select('project_id')
+      .eq('user_id', session.user.id);
+    (data || []).forEach(r => r.project_id && currentlyFeatured.add(r.project_id));
+  }catch(e){}
+  state._featureSelection = new Set(currentlyFeatured);
+  renderFeaturePicker();
+  document.getElementById('feature-modal').classList.add('open');
+}
+
+function renderFeaturePicker(){
+  const tier = (state.tier || 'free').toLowerCase();
+  const cap  = TIER_CAPS[tier] || 0;
+  const list = document.getElementById('fp-list');
+  const sub  = document.getElementById('fp-tier-sub');
+  const cnt  = document.getElementById('fp-count');
+  const sel  = state._featureSelection || new Set();
+  sub.textContent = `${tier[0].toUpperCase()+tier.slice(1)} tier — pick up to ${cap} project${cap===1?'':'s'} to feature in the Spotlight.`;
+  cnt.innerHTML = `<b>${sel.size}</b> / ${cap} selected`;
+  const projects = state.projects || [];
+  if(!projects.length){
+    list.innerHTML = `<div class="spot-empty">You don't have any projects yet. Create one first.</div>`;
+    return;
+  }
+  const safe = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  list.innerHTML = projects.map(p => {
+    const checked  = sel.has(p.id);
+    const atCap    = sel.size >= cap && !checked;
+    return `<label class="fp-row ${checked?'selected':''} ${atCap?'disabled':''}">
+      <input type="checkbox" ${checked?'checked':''} ${atCap?'disabled':''}
+             onchange="toggleFeatured('${safe(p.id)}', this.checked)">
+      <div>
+        <div class="fp-name">${safe(p.name || 'Untitled')}</div>
+        <div class="fp-desc">${safe((p.ad_goal || p.description || '').slice(0,80))}</div>
+      </div>
+    </label>`;
+  }).join('');
+}
+
+function toggleFeatured(projectId, on){
+  const sel = state._featureSelection || new Set();
+  if(on) sel.add(projectId); else sel.delete(projectId);
+  state._featureSelection = sel;
+  renderFeaturePicker();
+}
+
+function closeFeatureModal(){
+  document.getElementById('feature-modal').classList.remove('open');
+}
+
+async function saveFeatured(){
+  if(!supa || !session){ alert('Sign in first.'); return; }
+  const ids = Array.from(state._featureSelection || []);
+  const btn = document.getElementById('fp-save');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const { data, error } = await supa.rpc('adclaw_set_featured', {
+      p_advertiser_id: session.user.id,
+      p_project_ids:   ids,
+    });
+    if(error) throw error;
+    if(data && data.ok === false) throw new Error(data.error || 'failed');
+    closeFeatureModal();
+    await loadSpotlight();
+    document.getElementById('spot-grid')?.scrollIntoView({ behavior:'smooth', block:'start' });
+  }catch(e){
+    alert('Spotlight save failed: ' + (e.message || e));
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save featured';
+  }
 }
 
 // Store spotlight items so the modal can look them up by id.
@@ -1493,7 +2545,7 @@ function renderSpotlight(it, ttl){
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v5"/><circle cx="12" cy="16.5" r="1" fill="currentColor" stroke="none"/></svg>
           Details
         </button>
-        <a class="spot-btn primary" href="${safe(it.url)}" target="_blank" rel="noopener" aria-label="Visit ${safe(it.name)}">
+        <a class="spot-btn primary" href="${safe(it.url)}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${safe(it.name)}">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5h5v5M19 5l-8.5 8.5M5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>
           Visit site
         </a>
@@ -1525,7 +2577,7 @@ function openSpotlightDetails(key){
     <div class="det-tagline">${safe(it.tagline || '')}</div>
     ${it.hook ? `<div class="det-hook">${renderHook(it)}</div>` : ''}
     <div class="det-bullets">${bullets.map(b => `<span class="det-bullet">${safe(b)}</span>`).join('')}</div>
-    <a class="det-cta" href="${safe(it.url)}" target="_blank" rel="noopener">Visit ${safe(host)} →</a>
+    <a class="det-cta" href="${safe(it.url)}" target="_blank" rel="noopener noreferrer">Visit ${safe(host)} →</a>
     <div class="det-timer" aria-hidden="true"></div>
   `;
   card.querySelector('.det-body').innerHTML = `
@@ -1537,7 +2589,7 @@ function openSpotlightDetails(key){
       ${it.pinned ? '<span class="det-pill">Anchor · pinned</span>' : '<span class="det-pill">7-day feature</span>'}
     </div>
     <div class="det-actions">
-      <a class="btn btn-primary" href="${safe(it.url)}" target="_blank" rel="noopener">Visit site ↗</a>
+      <a class="btn btn-primary" href="${safe(it.url)}" target="_blank" rel="noopener noreferrer">Visit site ↗</a>
       <button type="button" class="btn btn-ghost" onclick="showTab('hub')">← Back to hub</button>
     </div>
   `;
@@ -1598,22 +2650,80 @@ function autoDescription(it){
 }
 
 async function loadWallet(){
-  let credits = 0, subbed = false;
+  let credits = 0, subbed = false, tier = 'free', expiresAt = null;
   try{
     const r = await fetch(`/api/advertiser/${advId()}/wallet`);
     const d = await r.json();
-    credits = d.wallet_credits || 0;
-    subbed = !!d.is_subscribed;
+    credits   = d.wallet_credits || 0;
+    subbed    = !!d.is_subscribed;
+    tier      = (d.tier || 'free').toLowerCase();
+    expiresAt = d.sub_expires_at || null;
     if(subbed){
       document.getElementById('pm-label').textContent = 'Subscription active';
-      document.getElementById('pm-sub').textContent = '$50/mo · 750 credits/mo · managed by Stripe';
+      document.getElementById('pm-sub').textContent = `${tier === 'gold' ? '$25' : '$50'}/mo · managed by Stripe`;
       const sub = document.getElementById('hub-wallet-sub');
-      if(sub) sub.textContent = 'Subscription active · 750 credits/mo · managed by Stripe.';
+      if(sub) sub.textContent = `Subscription active · ${tier === 'gold' ? '300' : '750'} credits/mo · managed by Stripe.`;
     }
   }catch(e){}
+  state.tier = tier;
+  state.subExpiresAt = expiresAt;
   document.getElementById('wallet-credits').textContent = fmt(credits);
   document.getElementById('hub-credits').textContent = fmt(credits);
   document.getElementById('hub-stat-credits').textContent = fmt(credits);
+  renderTierStatus(tier, expiresAt);
+}
+
+function renderTierStatus(tier, expiresAt){
+  const el     = document.getElementById('tier-status');
+  const badge  = document.getElementById('ts-badge');
+  const label  = document.getElementById('ts-label');
+  const sub    = document.getElementById('ts-sub');
+  const renew  = document.getElementById('ts-renew');
+  if(!el) return;
+  el.classList.remove('t-free','t-gold','t-diamond','expiring','expired');
+  if(tier === 'gold'){
+    el.classList.add('t-gold');
+    badge.textContent = '⭐';
+    label.textContent = 'Gold tier';
+    renew.style.display = '';
+  } else if(tier === 'diamond'){
+    el.classList.add('t-diamond');
+    badge.textContent = '💎';
+    label.textContent = 'Diamond tier';
+    renew.style.display = '';
+  } else {
+    el.classList.add('t-free');
+    badge.textContent = '✨';
+    label.textContent = 'Free tier';
+    sub.textContent   = 'Unlimited days · +5 credits/day with active project';
+    renew.style.display = 'none';
+    return;
+  }
+  // Compute days until downgrade
+  if(!expiresAt){
+    sub.textContent = 'Auto-renews monthly';
+    return;
+  }
+  const ms   = Date.parse(expiresAt) - Date.now();
+  const days = Math.ceil(ms / 86400000);
+  if(days <= 0){
+    el.classList.add('expired');
+    sub.textContent = 'Expired — pay now to continue, or you will be downgraded to Free';
+  } else if(days <= 3){
+    el.classList.add('expiring');
+    sub.textContent = `${days} day${days===1?'':'s'} until downgrade to Free · renew to continue`;
+  } else {
+    sub.textContent = `${days} days until downgrade to Free · auto-renews at period end`;
+  }
+}
+
+function renewTier(){
+  const tier = state.tier || 'free';
+  if(tier === 'gold')    return subscribe('gold', 25);
+  if(tier === 'diamond') return subscribe('diamond', 50);
+  // Free users — prompt to upgrade
+  showTab('hub');
+  document.querySelector('.pricing-section')?.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function loadHistory(){
@@ -1643,7 +2753,7 @@ async function loadHistory(){
     const list = document.getElementById('history-list');
     if(!list) return;
     if(!state.history.length){
-      list.innerHTML = `<div class="empty">No transactions yet. Top up credits to see your history here.</div>`;
+      list.innerHTML = `<div class="empty">No transactions yet. Top up your credits to see your history here.</div>`;
       return;
     }
     list.innerHTML = state.history.map(renderHistoryRow).join('');
@@ -1693,19 +2803,34 @@ async function loadProjects(){
       list.innerHTML = `<div class="empty">No projects yet. Click <strong>+ New project</strong> to create your first one.</div>`;
       return;
     }
-    list.innerHTML = state.projects.map(p => `
+    list.innerHTML = state.projects.map(p => {
+      const shortUrl = (u) => { try { return new URL(u).hostname.replace(/^www\./,''); } catch(_) { return u; } };
+      return `
       <div class="proj">
-        <h3>${escape(p.name)}</h3>
-        ${p.webpage_url ? `<div class="gh">🌐 ${escape(p.webpage_url)}</div>` : ''}
-        ${p.github_url ? `<div class="gh">${escape(p.github_url)}</div>` : ''}
-        <div class="desc">${escape(p.description) || '<em style="color:var(--text-2)">No description — will be auto-generated from repo + site.</em>'}</div>
-        <div class="goal">GOAL · ${escape(p.ad_goal)}</div>
-        ${p.voice ? `<div class="goal" style="color:var(--text-3);font-size:11px;margin-top:4px">🎙 ${KOKORO_VOICES[p.voice] || p.voice}</div>` : ''}
-        <div class="proj-actions">
-          <button class="btn btn-primary" onclick="generate('${p.id}')">✨ Generate card</button>
-          <button class="btn" onclick="openEditProjectModal('${p.id}')">Edit</button>
+        <div class="proj-head">
+          <h3>${escape(p.name)}</h3>
         </div>
-      </div>`).join('');
+        ${p.tagline ? `<div class="proj-tagline">"${escape(p.tagline)}"</div>` : ''}
+        ${(p.webpage_url || p.github_url) ? `<div class="proj-links">
+          ${p.webpage_url ? `<span class="gh gh-web" title="${escape(p.webpage_url)}">🌐 ${escape(shortUrl(p.webpage_url))}</span>` : ''}
+          ${p.github_url ? `<span class="gh" title="${escape(p.github_url)}">⚡ ${escape(shortUrl(p.github_url))}</span>` : ''}
+        </div>` : ''}
+        ${p.problem_solved
+          ? `<div class="proj-problem"><b>Problem solved</b>${escape(p.problem_solved)}</div>`
+          : `<div class="proj-problem"><b>Problem solved</b><em style="color:var(--text-3)">Not set yet — click Edit to describe the pain this product removes.</em></div>`}
+        ${p.description
+          ? `<div class="desc">${escape(p.description)}</div>`
+          : `<div class="desc"><em>No description — will be auto-generated from repo + site.</em></div>`}
+        <div class="proj-meta">
+          <div><b>Who it's for</b><span>${escape(p.target_audience || 'Anyone')}</span></div>
+          <div><b>Ad goal</b><span>${escape(p.ad_goal || '—')}</span></div>
+        </div>
+        <div class="proj-actions">
+          <button class="btn btn-primary" onclick="generate('${p.id}')" aria-label="Generate ad card for ${escape(p.name)}">✨ Generate card</button>
+          <button class="btn" onclick="openEditProjectModal('${p.id}')" aria-label="Edit project ${escape(p.name)}">Edit</button>
+        </div>
+      </div>`;
+    }).join('');
   }catch(e){
     state.projects = [];
     document.getElementById('hub-projects-count').textContent = '0';
@@ -1771,13 +2896,49 @@ function renderSlide(s){
         <button class="status-pill ${st==='inactive'?'sel-inactive':''}" onclick="setStatus('${s.id}','inactive')"><span class="status-dot"></span>Inactive</button>
       </div>
       <div class="slide-actions">
-        <button class="btn tts-btn" data-tts-headline="${(s.headline||'').replace(/"/g,'&quot;')}" data-tts-body="${(s.body||'').replace(/"/g,'&quot;')}" data-tts-voice="${s.voice || 'af_bella'}" onclick="playTTS(this.dataset.ttsHeadline + '. ' + this.dataset.ttsBody, this.dataset.ttsVoice)">🔊</button>
+        <button class="btn" onclick="previewSlide('${s.id}')">▶ Preview</button>
         <button class="btn" ${editsLeft<=0?'disabled':''} onclick="openEdit('${s.id}')">Edit</button>
       </div>
     </div>`;
 }
 
 function escape(s){ return (s||'').toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// Preview a library card using the existing Spotlight details animation.
+// Adapts a slide row (headline/body/cta_label) into the spotlight-item shape
+// consumed by openSpotlightDetails() so we reuse the 25s animated sequence.
+function previewSlide(slideId){
+  const s = (state.library || []).find(x => x.id === slideId);
+  if(!s) return;
+  const accent = s.accent_color || '#f59e0b';
+  // Hex → "r,g,b" for the --d-rgb CSS var
+  let rgb = '245,158,11';
+  const m = /^#?([0-9a-f]{6})$/i.exec(accent);
+  if(m){
+    const n = parseInt(m[1], 16);
+    rgb = `${(n>>16)&255},${(n>>8)&255},${n&255}`;
+  }
+  const name = s.headline || s.campaign_name || 'Preview';
+  const bullets = (s.body || '').split(/[.•\n]+/).map(x => x.trim()).filter(Boolean).slice(0,4);
+  const item = {
+    id: 'preview-' + s.id,
+    name,
+    tagline: s.badge || '',
+    hook: s.body || '',
+    bullets,
+    description: s.body || '',
+    url: s.cta_url || '#',
+    logo_letter: (name[0] || '?').toUpperCase(),
+    gradient_from: accent,
+    gradient_to:   accent,
+    accent_rgb:    rgb,
+    pinned: false,
+  };
+  window._spotCache = window._spotCache || new Map();
+  window._spotCache.set(item.id, item);
+  openSpotlightDetails(item.id);
+}
+
 
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
@@ -1791,7 +2952,8 @@ function openNewProjectModal(){
   document.getElementById('proj-desc').value = '';
   document.getElementById('proj-goal').value = '';
   document.getElementById('proj-audience').value = '';
-  document.getElementById('proj-voice').value = 'af_bella';
+  document.getElementById('proj-problem').value = '';
+  document.getElementById('proj-tagline').value = '';
   document.getElementById('proj-notes').value = '';
   openModal('proj-modal');
 }
@@ -1807,7 +2969,8 @@ function openEditProjectModal(projectId){
   document.getElementById('proj-desc').value = p.description || '';
   document.getElementById('proj-goal').value = p.ad_goal || '';
   document.getElementById('proj-audience').value = p.target_audience || '';
-  document.getElementById('proj-voice').value = p.voice || 'af_bella';
+  document.getElementById('proj-problem').value = p.problem_solved || '';
+  document.getElementById('proj-tagline').value = p.tagline || '';
   document.getElementById('proj-notes').value = p.notes || '';
   openModal('proj-modal');
 }
@@ -1841,9 +3004,11 @@ async function submitProject(e){
 
 function buildOllamaPrompt(project, analysis){
   const userDesc = (project.description || '').trim();
-  return `You are an ad copywriter. Generate a JSON ad card for this project.
+  return `You are a senior ad copywriter for a 30-second pre-meeting ad channel. A viewer has 30 seconds to understand what problem this product solves and decide whether to care. Lead with the pain, then the fix.
 
 PROJECT NAME: ${project.name || 'Project'}
+PROBLEM SOLVED: ${project.problem_solved || 'Not specified — infer from research.'}
+USER-WRITTEN TAGLINE: ${project.tagline || 'None — write one.'}
 AD GOAL: ${project.ad_goal || 'N/A'}
 TARGET AUDIENCE: ${project.target_audience || 'N/A'}
 WEBSITE: ${project.webpage_url || 'N/A'}
@@ -1855,15 +3020,22 @@ ${userDesc || 'None provided.'}
 RESEARCH DATA (from GitHub + website):
 ${analysis || 'No research data available.'}
 
-SYNTHESIS INSTRUCTIONS:
-- If BOTH user description and research data are present: merge them into one better description. Keep the user's intent and tone, but enrich it with specific facts from the research. The result must be more specific and compelling than either source alone.
-- If only user description is present: polish and tighten it. Make it punchier and more specific.
-- If only research is present: write a description based solely on the research.
-- The body/description must be max 180 chars, genuinely informative, and free of generic marketing fluff like "Built for teams who need real results, fast."
-- Be specific about the problem solved, the technology used, or the audience helped.
+OUTPUT RULES — the viewer must finish reading knowing (1) what problem this solves and (2) for whom:
+- headline (≤60 chars): lead with the outcome or the pain. No brand-fluff ("The #1 platform…"), no vague verbs ("Unlock your potential"). Ex: "Ship landing pages in minutes, not weeks."
+- body (≤180 chars): state the concrete problem in one sentence, then the concrete fix in the next. Use numbers if the research has them (stars, users, % faster, $ saved). Never use phrases like "real results", "next-gen", "powerful", "seamless", "game-changing".
+- hook (one sentence): the emotional grab — the frustration the audience feels today.
+- tagline: 3–6 words; who it's for + what it does. Ex: "AI hiring for fast-growing startups."
+- badge: a short category or status tag (e.g. "AI Tool", "Dev Tool", "New", "Beta").
+- accent_color: pick a hex that matches the brand or product category.
 
-Return ONLY valid JSON with these exact fields, no markdown fences:
-{"headline":"string (max 60 chars, catchy)","badge":"string (e.g. New, Featured, AI Tool)","body":"string (max 180 chars, specific synthesis)","cta_label":"string (e.g. Try it, Learn more, Sign up)","cta_url":"string","accent_color":"#hex (choose a color that fits the brand)","hook":"string (one sentence hook)","hook_highlight":"string (word to bold in hook)","tagline":"string (who it's for)"}`;
+SYNTHESIS:
+- If user supplied PROBLEM SOLVED, anchor the copy on that exact pain; don't invent a different one.
+- If user supplied TAGLINE, keep its spirit and tone in the final tagline field.
+- If only research exists, extract the sharpest concrete pain from the README / site copy.
+- Merge, don't paraphrase. Specific beats clever.
+
+Return ONLY valid JSON, no markdown fences:
+{"headline":"string (≤60 chars)","badge":"string","body":"string (≤180 chars, problem→fix)","cta_label":"string","cta_url":"string","accent_color":"#hex","hook":"string","hook_highlight":"string (1-2 words from hook to bold)","tagline":"string (3-6 words, who-it's-for + what-it-does)"}`;
 }
 
 async function fetchGitHubData(githubUrl){
@@ -2070,7 +3242,7 @@ function resetGenerationUI(){
   const title = document.getElementById('gen-title');
   const sub = document.getElementById('gen-sub');
   if(title) title.textContent = 'Composing your card...';
-  if(sub) sub.textContent = 'We read your inputs, fetch your repo + site, and build a 25-second animated ad.';
+  if(sub) sub.textContent = 'We read your inputs, fetch your repo + site, and build a 30-second animated ad.';
 }
 
 async function generate(projectId){
@@ -2098,7 +3270,7 @@ async function generate(projectId){
   await stage(0, 'Reading your project inputs', async () => project);
 
   // Stage 2: Fetch GitHub
-  const githubData = await stage(1, project.github_url ? 'Analysing GitHub repo' : 'Skipping GitHub (no repo)', async () => {
+  const githubData = await stage(1, project.github_url ? 'Analyzing GitHub repo' : 'Skipping GitHub (no repo)', async () => {
     if(!project.github_url) return null;
     return await fetchGitHubData(project.github_url);
   });
@@ -2178,7 +3350,6 @@ function openGeneratedPreview(draft, project){
         </div>
       </div>
       <button type="button" class="btn btn-primary" onclick="saveGenerated()">💾 Save to Library</button>
-      <button type="button" class="btn tts-btn" onclick="playDraftTTS('${voice}')">🔊 Listen</button>
       <button type="button" class="btn" onclick="generate('${project.id}')">↻ Regenerate</button>
       <button type="button" class="btn btn-ghost" onclick="showTab('projects')">Cancel</button>
       ${draft._source === 'template' ? '<span class="det-pill" style="border-color:rgba(245,158,11,.4);color:var(--amber)">Fallback draft</span>' : ''}
@@ -2270,7 +3441,43 @@ async function topup(usd){
   }catch(e){ alert('Checkout failed: '+e.message); }
 }
 
+// Subscribe to a named plan (gold/diamond) — delegates to topup() with the
+// right USD amount. For non-logged-in users, route through signup first.
+async function subscribe(plan, usd){
+  if(!window.__supa || !(await window.__supa.auth.getUser()).data.user){
+    // Not logged in yet — send to Google sign-in; user will land on checkout
+    // after auth once we persist the pending plan.
+    try{ sessionStorage.setItem('pending_plan', JSON.stringify({plan, usd})); }catch(_){}
+    return signIn('google');
+  }
+  return topup(usd);
+}
+
+// Free tier — just ensure the user is signed in; they get 10 credits on first
+// advertiser-row create (handled server-side by _ensure_advertiser).
+function startSignUp(plan){
+  try{ sessionStorage.setItem('pending_plan', JSON.stringify({plan, usd:0})); }catch(_){}
+  signIn('google');
+}
+
 init();
 </script>
+
+<!-- Feature picker modal — pick which projects to feature in the Spotlight -->
+<div class="modal-bg" id="feature-modal" onclick="if(event.target===this)closeFeatureModal()">
+  <div class="modal" role="dialog" aria-labelledby="fp-title">
+    <div class="modal-head">
+      <h2 id="fp-title">✨ Feature my project</h2>
+      <button class="ts-renew" type="button" onclick="closeFeatureModal()">Close</button>
+    </div>
+    <p class="modal-sub" id="fp-tier-sub">Pick the projects you want to feature in the Subscriber Spotlight.</p>
+    <div class="fp-count" id="fp-count">0 / 0 selected</div>
+    <div class="fp-list" id="fp-list">No projects yet.</div>
+    <div class="modal-actions">
+      <button class="btn ghost" type="button" onclick="closeFeatureModal()">Cancel</button>
+      <button class="btn primary" type="button" id="fp-save" onclick="saveFeatured()">Save featured</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
