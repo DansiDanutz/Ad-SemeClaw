@@ -90,18 +90,20 @@ ADCLAW_LLM_MODEL=anthropic/claude-haiku-4-5-20251001
 ANTHROPIC_API_KEY      # or OPENROUTER_API_KEY
 ```
 
-## Supabase OAuth setup (already configured)
+## Supabase OAuth setup
 
 Auth → URL Configuration:
-- **Site URL**: `https://never-die.vercel.app` (legacy — don't change unless you re-test that app)
-- **Redirect URLs (allow-list)** includes:
+- **Site URL**: `https://ad-semeclaw.vercel.app` — this is where OAuth lands after sign-in. Must match the production domain.
+- **Redirect URLs (allow-list)**:
   - `https://ad-semeclaw.vercel.app/**`
-  - `https://ad-semeclaw-*.vercel.app/**` (preview deploys)
-  - `http://localhost:8765/**`, `http://localhost:8766/**`
+  - `https://ad-semeclaw-*.vercel.app/**` (Vercel preview deploys)
+  - `http://localhost:8765/**`, `http://localhost:8766/**` (local dev)
 
-OAuth providers:
-- Google — client in `943890585767-i91o38hgsoeesk52c62it8hev4gcnrsa.apps.googleusercontent.com`
-- GitHub — OAuth App `Ad NOW - SemeClaw` (ID 3547161), client `Ov23liVIDdNDIRIMjkaR`
+OAuth providers (configure in Auth → Providers):
+- **Google** — enable and paste the Google OAuth client ID/secret.
+- **GitHub** — enable and paste the GitHub OAuth app credentials. Set the GitHub app's Authorization callback URL to `https://<your-supabase-project>.supabase.co/auth/v1/callback`.
+
+> Historical note: the Site URL was previously `https://never-die.vercel.app` for a different app reusing this Supabase project. It has been retargeted — if anything under `never-die.vercel.app` still relies on Supabase auth, move it to its own Supabase project rather than reverting.
 
 ## Stripe webhook
 
