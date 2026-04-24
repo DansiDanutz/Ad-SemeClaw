@@ -1580,6 +1580,19 @@ textarea{min-height:80px;resize:vertical}
       <p class="helper helper-gap">Cards are stored securely by Stripe. We never see your full card number.</p>
     </div>
 
+    <div class="card span-12">
+      <div class="card-title">Generation settings</div>
+      <p class="helper">Optional: point to your own Ollama endpoint to generate ad drafts locally (faster, cheaper). Leave blank to use the server LLM.</p>
+      <label class="sr-only" for="ollama-url-input">Ollama endpoint URL</label>
+      <input id="ollama-url-input" type="url" placeholder="https://ollama.example.com" spellcheck="false" autocomplete="off"
+        style="width:100%;max-width:520px;margin-top:8px;padding:9px 12px;background:var(--surface);border:1px solid var(--border-2);color:var(--text-1);border-radius:8px;font-size:13px;font-family:var(--mono,monospace);" />
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="saveOllamaSettings()">Save</button>
+        <span id="ollama-url-status" class="helper"></span>
+      </div>
+      <p class="helper helper-gap" style="margin-top:12px;">Stored only in your browser (localStorage). No hardcoded URLs ship with the site.</p>
+    </div>
+
   </div>
 </section>
 
@@ -2061,7 +2074,7 @@ const KOKORO_VOICES = {
 };
 // ── Generation config ──
 const GEN_CONFIG = {
-  ollamaUrl: 'https://sims-testimonials-rent-innocent.trycloudflare.com',
+  ollamaUrl: '',   // Set via Profile → Generation settings; empty = skip local LLM, use the server endpoint.
   ollamaModel: 'qwen2.5-coder:7b',
   ollamaTimeout: 30000,     // 30s before we bail on Ollama
   backendTimeout: 60000,    // 60s before we bail on backend API
@@ -2072,12 +2085,46 @@ function updateOllamaUrl(url){
   if(url) GEN_CONFIG.ollamaUrl = url.replace(/\/+$/, '');
 }
 
+// Persist/restore Ollama URL so users don't re-enter it each session.
+const OLLAMA_URL_KEY = 'semeclaw_ollama_url';
+function loadOllamaSettings(){
+  try{
+    const saved = localStorage.getItem(OLLAMA_URL_KEY) || '';
+    if(saved) updateOllamaUrl(saved); else GEN_CONFIG.ollamaUrl = '';
+    const input = document.getElementById('ollama-url-input');
+    if(input) input.value = saved;
+  }catch(e){ /* localStorage unavailable — ignore */ }
+}
+function saveOllamaSettings(){
+  const input = document.getElementById('ollama-url-input');
+  if(!input) return;
+  const raw = (input.value || '').trim();
+  if(raw){
+    try{
+      const u = new URL(raw);
+      if(u.protocol !== 'https:' && u.protocol !== 'http:') throw new Error('bad scheme');
+    }catch(e){
+      const s = document.getElementById('ollama-url-status');
+      if(s){ s.textContent = 'Invalid URL'; s.classList.add('err'); setTimeout(() => { s.textContent = ''; s.classList.remove('err'); }, 2200); }
+      return;
+    }
+    updateOllamaUrl(raw);
+    try{ localStorage.setItem(OLLAMA_URL_KEY, raw); }catch(e){}
+  } else {
+    GEN_CONFIG.ollamaUrl = '';
+    try{ localStorage.removeItem(OLLAMA_URL_KEY); }catch(e){}
+  }
+  const s = document.getElementById('ollama-url-status');
+  if(s){ s.textContent = raw ? 'Saved' : 'Cleared — drafts will use the server LLM.'; s.classList.add('ok'); setTimeout(() => { s.textContent = ''; s.classList.remove('ok'); }, 2200); }
+}
+
 async function loadAuthConfig(){
   const r = await fetch('/api/advertiser/auth/config');
   return r.ok ? r.json() : null;
 }
 
 async function init(){
+  loadOllamaSettings();
   const cfg = await loadAuthConfig();
   if(!cfg || !cfg.supabase_url || !cfg.supabase_anon_key){
     document.getElementById('login-pane').style.display = 'grid';
