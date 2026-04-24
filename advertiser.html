@@ -3042,7 +3042,7 @@ async function submitProject(e){
   delete payload.project_id;
   try{
     const url = `/api/advertiser/${advId()}/projects${projectId ? '/' + projectId : ''}`;
-    const r = await fetch(url, {
+    const r = await apiFetch(url, {
       method: projectId ? 'PATCH' : 'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(payload)
