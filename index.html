@@ -2048,9 +2048,49 @@ textarea{min-height:80px;resize:vertical}
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8"></script>
 <script>
 let supa = null, session = null;
+const nativeFetch = window.fetch.bind(window);
+
+async function authenticatedFetch(input, init){
+  const request = new Request(input, init);
+  const url = new URL(request.url, location.href);
+  const protectedAdvertiserApi = url.origin === location.origin
+    && url.pathname.startsWith('/api/advertiser/')
+    && url.pathname !== '/api/advertiser/auth/config';
+  if(!protectedAdvertiserApi) return nativeFetch(request);
+  if(!session?.access_token){
+    return new Response(JSON.stringify({error:'authenticated advertiser session required'}), {
+      status: 401, headers: {'Content-Type':'application/json'}
+    });
+  }
+  const headers = new Headers(request.headers);
+  headers.set('Authorization', 'Bearer ' + session.access_token);
+  return nativeFetch(new Request(request, {headers}));
+}
+window.fetch = authenticatedFetch;
+
+function safeHttpUrl(value){
+  if(!value) return '#';
+  const raw = String(value).trim();
+  if(!/^https?:\/\//i.test(raw)) return '#';
+  try{
+    const url = new URL(raw);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '#';
+  }catch(_){ return '#'; }
+}
+
+function safeHexColor(value, fallback = '#f59e0b'){
+  const color = String(value || '');
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+}
+
+function safeRgb(value, fallback = '245,158,11'){
+  const parts = String(value || '').split(',').map(Number);
+  return parts.length === 3 && parts.every(n => Number.isInteger(n) && n >= 0 && n <= 255)
+    ? parts.join(',') : fallback;
+}
 const state = { projects: [], library: [], lastDraft: null, lastProjectId: null, draftStatus: 'active', history: [] };
 const KOKORO_VOICES = {
   af_bella: 'Bella — Warm female',
@@ -2059,18 +2099,7 @@ const KOKORO_VOICES = {
   am_adam: 'Adam — American male',
   bm_george: 'George — British male',
 };
-// ── Generation config ──
-const GEN_CONFIG = {
-  ollamaUrl: 'https://sims-testimonials-rent-innocent.trycloudflare.com',
-  ollamaModel: 'qwen2.5-coder:7b',
-  ollamaTimeout: 30000,     // 30s before we bail on Ollama
-  backendTimeout: 60000,    // 60s before we bail on backend API
-  slowWarningMs: 15000      // show "taking longer" after 15s
-};
-
-function updateOllamaUrl(url){
-  if(url) GEN_CONFIG.ollamaUrl = url.replace(/\/+$/, '');
-}
+const BACKEND_TIMEOUT = 60000;
 
 async function loadAuthConfig(){
   const r = await fetch('/api/advertiser/auth/config');
@@ -2081,8 +2110,7 @@ async function init(){
   const cfg = await loadAuthConfig();
   if(!cfg || !cfg.supabase_url || !cfg.supabase_anon_key){
     document.getElementById('login-pane').style.display = 'grid';
-    document.querySelector('.login-box p').innerHTML = '<strong style="color:var(--amber)">Auth not configured.</strong> Set DLS_TEAM_SUPABASE_URL + DLS_TEAM_SUPABASE_ANON_KEY on the server to enable login. <br><br>Running in demo mode: <a href="?id=demo" style="color:var(--cyan)">continue as demo</a>';
-    if(new URLSearchParams(location.search).get('id')){ bootAsDemo(); }
+    document.querySelector('.login-box p').textContent = 'Auth is unavailable because the server is not configured. Contact the operator.';
     return;
   }
   supa = window.supabase.createClient(cfg.supabase_url, cfg.supabase_anon_key);
@@ -2113,11 +2141,6 @@ async function signOut(){
   location.reload();
 }
 
-function bootAsDemo(){
-  session = { user: { id: 'demo', email: 'demo@semeclaw.local', user_metadata: { full_name: 'Demo User' } } };
-  boot();
-}
-
 async function boot(){
   document.getElementById('login-pane').style.display = 'none';
   const u = session.user;
@@ -2125,14 +2148,7 @@ async function boot(){
   const first = (name||'there').split(/\s+/)[0];
   const initial = (name||'?')[0].toUpperCase();
   const avatar = u.user_metadata?.avatar_url;
-  document.getElementById('user-area').innerHTML = `
-    <div class="user-chip" title="${(u.email||'').replace(/"/g,'&quot;')}">
-      ${avatar ? `<img src="${avatar}" alt="">` : `<span class="user-initial">${initial}</span>`}
-      <span class="user-chip-name">${name}</span>
-    </div>
-    <button class="signout-btn" type="button" onclick="signOut()" title="Sign out" aria-label="Sign out">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17l5-5-5-5M20 12H9M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/></svg>
-    </button>`;
+  renderUserArea(u, name, initial, avatar);
   // Detail-pane population
   document.getElementById('profile-name').textContent = name;
   document.getElementById('profile-email').textContent = u.email || '—';
@@ -2142,10 +2158,47 @@ async function boot(){
   document.getElementById('hub-profile-name').textContent = name;
   document.getElementById('hub-profile-email').textContent = u.email || '—';
   const hubAvatar = document.getElementById('hub-avatar');
-  if(avatar){ hubAvatar.textContent = ''; hubAvatar.innerHTML = `<img src="${avatar}" alt="" style="width:100%;height:100%;border-radius:inherit;object-fit:cover">`; }
+  if(avatar && safeHttpUrl(avatar) !== '#'){
+    const image = document.createElement('img');
+    image.src = safeHttpUrl(avatar);
+    image.alt = '';
+    image.style.cssText = 'width:100%;height:100%;border-radius:inherit;object-fit:cover';
+    hubAvatar.replaceChildren(image);
+  }
   else { hubAvatar.textContent = initial; hubAvatar.style.fontWeight = '800'; }
   showTab('hub');
   loadAll();
+}
+
+function renderUserArea(user, name, initial, avatar){
+  const area = document.getElementById('user-area');
+  const chip = document.createElement('div');
+  chip.className = 'user-chip';
+  chip.title = user.email || '';
+  const avatarUrl = safeHttpUrl(avatar);
+  if(avatarUrl !== '#'){
+    const image = document.createElement('img');
+    image.src = avatarUrl;
+    image.alt = '';
+    chip.append(image);
+  }else{
+    const fallback = document.createElement('span');
+    fallback.className = 'user-initial';
+    fallback.textContent = initial;
+    chip.append(fallback);
+  }
+  const label = document.createElement('span');
+  label.className = 'user-chip-name';
+  label.textContent = name;
+  chip.append(label);
+  const button = document.createElement('button');
+  button.className = 'signout-btn';
+  button.type = 'button';
+  button.title = 'Sign out';
+  button.setAttribute('aria-label', 'Sign out');
+  button.textContent = '↪';
+  button.addEventListener('click', signOut);
+  area.replaceChildren(chip, button);
 }
 
 const TAB_TITLES = { hub:'Hub', profile:'Profile & Wallet', projects:'Projects', library:'Library', history:'History', special:'Special', about:'About ad-NOW', details:'Spotlight · Details', generate:'Generating card' };
@@ -2367,7 +2420,7 @@ function subscribeAnnual(plan, usd){
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({tier: plan + '_annual'})
   }).then(r => r.json()).then(d => {
-    if(d.url) location.href = d.url; else alert(d.error || 'Annual checkout not configured yet');
+    if(d.url && safeHttpUrl(d.url) !== '#') location.href = safeHttpUrl(d.url); else alert(d.error || 'Annual checkout not configured yet');
   });
 }
 
@@ -2516,9 +2569,10 @@ function renderSpotlight(it, ttl){
     ? 'Anchor · Pinned'
     : (remaining === 0 ? 'Expires today' : `${remaining} day${remaining===1?'':'s'} left`);
   const host = (() => { try { return new URL(it.url).host.replace(/^www\./,''); } catch { return it.url; } })();
-  const gradFrom = it.gradient_from || '#f59e0b';
-  const gradTo   = it.gradient_to   || '#ec4899';
-  const rgb = it.accent_rgb || '245,158,11';
+  const gradFrom = safeHexColor(it.gradient_from);
+  const gradTo   = safeHexColor(it.gradient_to, '#ec4899');
+  const rgb = safeRgb(it.accent_rgb);
+  const visitUrl = safeHttpUrl(it.url);
   const letter = (it.logo_letter || it.name || '?')[0].toUpperCase();
   const safe = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const key = it.id || it.url || it.name;
@@ -2545,10 +2599,10 @@ function renderSpotlight(it, ttl){
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v5"/><circle cx="12" cy="16.5" r="1" fill="currentColor" stroke="none"/></svg>
           Details
         </button>
-        <a class="spot-btn primary" href="${safe(it.url)}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${safe(it.name)}">
+        ${visitUrl === '#' ? `<span class="spot-btn primary" aria-disabled="true">Visit unavailable</span>` : `<a class="spot-btn primary" href="${safe(visitUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${safe(it.name)}">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5h5v5M19 5l-8.5 8.5M5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>
           Visit site
-        </a>
+        </a>`}
       </div>
     </div>`;
 }
@@ -2559,9 +2613,10 @@ function openSpotlightDetails(key){
   if(!it){ return; }
   const safe = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const host = (() => { try { return new URL(it.url).host.replace(/^www\./,''); } catch { return it.url; } })();
-  const gradFrom = it.gradient_from || '#f59e0b';
-  const gradTo   = it.gradient_to   || '#ec4899';
-  const rgb = it.accent_rgb || '245,158,11';
+  const gradFrom = safeHexColor(it.gradient_from);
+  const gradTo   = safeHexColor(it.gradient_to, '#ec4899');
+  const rgb = safeRgb(it.accent_rgb);
+  const visitUrl = safeHttpUrl(it.url);
   const letter = (it.logo_letter || it.name || '?')[0].toUpperCase();
   const bullets = Array.isArray(it.bullets) && it.bullets.length
     ? it.bullets.slice(0,4)
@@ -2577,7 +2632,7 @@ function openSpotlightDetails(key){
     <div class="det-tagline">${safe(it.tagline || '')}</div>
     ${it.hook ? `<div class="det-hook">${renderHook(it)}</div>` : ''}
     <div class="det-bullets">${bullets.map(b => `<span class="det-bullet">${safe(b)}</span>`).join('')}</div>
-    <a class="det-cta" href="${safe(it.url)}" target="_blank" rel="noopener noreferrer">Visit ${safe(host)} →</a>
+    ${visitUrl === '#' ? '<span class="det-cta" aria-disabled="true">Visit unavailable</span>' : `<a class="det-cta" href="${safe(visitUrl)}" target="_blank" rel="noopener noreferrer">Visit ${safe(host)} →</a>`}
     <div class="det-timer" aria-hidden="true"></div>
   `;
   card.querySelector('.det-body').innerHTML = `
@@ -2589,7 +2644,7 @@ function openSpotlightDetails(key){
       ${it.pinned ? '<span class="det-pill">Anchor · pinned</span>' : '<span class="det-pill">7-day feature</span>'}
     </div>
     <div class="det-actions">
-      <a class="btn btn-primary" href="${safe(it.url)}" target="_blank" rel="noopener noreferrer">Visit site ↗</a>
+      ${visitUrl === '#' ? '<span class="btn btn-primary" aria-disabled="true">Visit unavailable</span>' : `<a class="btn btn-primary" href="${safe(visitUrl)}" target="_blank" rel="noopener noreferrer">Visit site ↗</a>`}
       <button type="button" class="btn btn-ghost" onclick="showTab('hub')">← Back to hub</button>
     </div>
   `;
@@ -2877,7 +2932,7 @@ async function loadLibrary(){
 }
 
 function renderSlide(s){
-  const accent = s.accent_color || '#f59e0b';
+  const accent = safeHexColor(s.accent_color);
   const editsLeft = Math.max(0, 3 - (s.edits_today || 0));
   const st = s.status || 'inactive';
   return `
@@ -2910,7 +2965,7 @@ function escape(s){ return (s||'').toString().replace(/[&<>"]/g, c => ({'&':'&am
 function previewSlide(slideId){
   const s = (state.library || []).find(x => x.id === slideId);
   if(!s) return;
-  const accent = s.accent_color || '#f59e0b';
+  const accent = safeHexColor(s.accent_color);
   // Hex → "r,g,b" for the --d-rgb CSS var
   let rgb = '245,158,11';
   const m = /^#?([0-9a-f]{6})$/i.exec(accent);
@@ -3001,42 +3056,6 @@ async function submitProject(e){
 // CARD GENERATION — research-first pipeline with real fetching
 // Stages do actual work: GitHub API → webpage crawl → LLM generation
 // ============================================================
-
-function buildOllamaPrompt(project, analysis){
-  const userDesc = (project.description || '').trim();
-  return `You are a senior ad copywriter for a 30-second pre-meeting ad channel. A viewer has 30 seconds to understand what problem this product solves and decide whether to care. Lead with the pain, then the fix.
-
-PROJECT NAME: ${project.name || 'Project'}
-PROBLEM SOLVED: ${project.problem_solved || 'Not specified — infer from research.'}
-USER-WRITTEN TAGLINE: ${project.tagline || 'None — write one.'}
-AD GOAL: ${project.ad_goal || 'N/A'}
-TARGET AUDIENCE: ${project.target_audience || 'N/A'}
-WEBSITE: ${project.webpage_url || 'N/A'}
-GITHUB: ${project.github_url || 'N/A'}
-
-USER DESCRIPTION:
-${userDesc || 'None provided.'}
-
-RESEARCH DATA (from GitHub + website):
-${analysis || 'No research data available.'}
-
-OUTPUT RULES — the viewer must finish reading knowing (1) what problem this solves and (2) for whom:
-- headline (≤60 chars): lead with the outcome or the pain. No brand-fluff ("The #1 platform…"), no vague verbs ("Unlock your potential"). Ex: "Ship landing pages in minutes, not weeks."
-- body (≤180 chars): state the concrete problem in one sentence, then the concrete fix in the next. Use numbers if the research has them (stars, users, % faster, $ saved). Never use phrases like "real results", "next-gen", "powerful", "seamless", "game-changing".
-- hook (one sentence): the emotional grab — the frustration the audience feels today.
-- tagline: 3–6 words; who it's for + what it does. Ex: "AI hiring for fast-growing startups."
-- badge: a short category or status tag (e.g. "AI Tool", "Dev Tool", "New", "Beta").
-- accent_color: pick a hex that matches the brand or product category.
-
-SYNTHESIS:
-- If user supplied PROBLEM SOLVED, anchor the copy on that exact pain; don't invent a different one.
-- If user supplied TAGLINE, keep its spirit and tone in the final tagline field.
-- If only research exists, extract the sharpest concrete pain from the README / site copy.
-- Merge, don't paraphrase. Specific beats clever.
-
-Return ONLY valid JSON, no markdown fences:
-{"headline":"string (≤60 chars)","badge":"string","body":"string (≤180 chars, problem→fix)","cta_label":"string","cta_url":"string","accent_color":"#hex","hook":"string","hook_highlight":"string (1-2 words from hook to bold)","tagline":"string (3-6 words, who-it's-for + what-it-does)"}`;
-}
 
 async function fetchGitHubData(githubUrl){
   try{
@@ -3144,40 +3163,9 @@ function analyzeSources(project, githubData, webpageData){
   return parts.join('\n\n');
 }
 
-async function fetchOllamaDraft(project, analysis){
-  const url = GEN_CONFIG.ollamaUrl;
-  if(!url) throw new Error('Ollama URL not configured');
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), GEN_CONFIG.ollamaTimeout);
-  try{
-    const r = await fetch(url + '/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: GEN_CONFIG.ollamaModel,
-        messages: [{ role: 'user', content: buildOllamaPrompt(project, analysis) }],
-        stream: false,
-        options: { temperature: 0.4 }
-      }),
-      signal: controller.signal
-    });
-    if(!r.ok) throw new Error('Ollama HTTP ' + r.status);
-    const d = await r.json();
-    const raw = (d.message && d.message.content) || '';
-    if(!raw) throw new Error('Ollama returned empty content');
-    const jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-    const draft = JSON.parse(jsonStr);
-    if(!draft.headline) throw new Error('Ollama draft missing headline');
-    draft._source = 'ollama';
-    return draft;
-  }finally{
-    clearTimeout(timer);
-  }
-}
-
 async function fetchBackendDraft(projectId){
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), GEN_CONFIG.backendTimeout);
+  const timer = setTimeout(() => controller.abort(), BACKEND_TIMEOUT);
   try{
     const r = await fetch(`/api/advertiser/${advId()}/projects/${projectId}/generate-card`, {
       method:'POST',
@@ -3290,8 +3278,6 @@ async function generate(projectId){
   let draft = null;
   try {
     draft = await stage(4, 'Composing hook + headline', async () => {
-      try { return await fetchOllamaDraft(project, analysis); }
-      catch(err) { console.warn('[gen] Ollama failed:', err.message); }
       try { return await fetchBackendDraft(projectId); }
       catch(err) { console.warn('[gen] Backend failed:', err.message); }
       return composeDraftClientSide(project, analysis);
@@ -3436,7 +3422,7 @@ async function topup(usd){
       body: JSON.stringify({tier: String(usd)})
     });
     const d = await r.json();
-    if(d.url){ location.href = d.url; return; }
+    if(d.url && safeHttpUrl(d.url) !== '#'){ location.href = safeHttpUrl(d.url); return; }
     alert(d.error || 'Stripe not configured yet.');
   }catch(e){ alert('Checkout failed: '+e.message); }
 }
@@ -3444,7 +3430,7 @@ async function topup(usd){
 // Subscribe to a named plan (gold/diamond) — delegates to topup() with the
 // right USD amount. For non-logged-in users, route through signup first.
 async function subscribe(plan, usd){
-  if(!window.__supa || !(await window.__supa.auth.getUser()).data.user){
+  if(!supa || !(await supa.auth.getUser()).data.user){
     // Not logged in yet — send to Google sign-in; user will land on checkout
     // after auth once we persist the pending plan.
     try{ sessionStorage.setItem('pending_plan', JSON.stringify({plan, usd})); }catch(_){}
