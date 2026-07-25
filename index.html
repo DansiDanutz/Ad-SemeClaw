@@ -2599,10 +2599,10 @@ function renderSpotlight(it, ttl){
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v5"/><circle cx="12" cy="16.5" r="1" fill="currentColor" stroke="none"/></svg>
           Details
         </button>
-        <a class="spot-btn primary" href="${safe(visitUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${safe(it.name)}">
+        ${visitUrl === '#' ? `<span class="spot-btn primary" aria-disabled="true">Visit unavailable</span>` : `<a class="spot-btn primary" href="${safe(visitUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${safe(it.name)}">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5h5v5M19 5l-8.5 8.5M5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>
           Visit site
-        </a>
+        </a>`}
       </div>
     </div>`;
 }
@@ -2632,7 +2632,7 @@ function openSpotlightDetails(key){
     <div class="det-tagline">${safe(it.tagline || '')}</div>
     ${it.hook ? `<div class="det-hook">${renderHook(it)}</div>` : ''}
     <div class="det-bullets">${bullets.map(b => `<span class="det-bullet">${safe(b)}</span>`).join('')}</div>
-    <a class="det-cta" href="${safe(visitUrl)}" target="_blank" rel="noopener noreferrer">Visit ${safe(host)} →</a>
+    ${visitUrl === '#' ? '<span class="det-cta" aria-disabled="true">Visit unavailable</span>' : `<a class="det-cta" href="${safe(visitUrl)}" target="_blank" rel="noopener noreferrer">Visit ${safe(host)} →</a>`}
     <div class="det-timer" aria-hidden="true"></div>
   `;
   card.querySelector('.det-body').innerHTML = `
@@ -2644,7 +2644,7 @@ function openSpotlightDetails(key){
       ${it.pinned ? '<span class="det-pill">Anchor · pinned</span>' : '<span class="det-pill">7-day feature</span>'}
     </div>
     <div class="det-actions">
-      <a class="btn btn-primary" href="${safe(visitUrl)}" target="_blank" rel="noopener noreferrer">Visit site ↗</a>
+      ${visitUrl === '#' ? '<span class="btn btn-primary" aria-disabled="true">Visit unavailable</span>' : `<a class="btn btn-primary" href="${safe(visitUrl)}" target="_blank" rel="noopener noreferrer">Visit site ↗</a>`}
       <button type="button" class="btn btn-ghost" onclick="showTab('hub')">← Back to hub</button>
     </div>
   `;

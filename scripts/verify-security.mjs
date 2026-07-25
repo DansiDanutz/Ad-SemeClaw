@@ -21,6 +21,7 @@ for (const page of pages) {
     failures.push(`${page}: relative and fragment URL sentinels must remain non-navigable`);
   }
   require(/function safeHexColor\(/, "untrusted style colors need strict validation");
+  require(/visitUrl === ['"]#['"].*aria-disabled/s, "rejected URLs must render as disabled non-anchors");
   require(/function renderUserArea\(/, "OAuth profile data must use DOM text/attribute setters");
   reject(/user-area'\)\.innerHTML\s*=\s*`/, "OAuth profile data must not enter innerHTML");
   reject(/Running in demo mode/, "missing auth configuration must fail closed, not expose demo API access");
