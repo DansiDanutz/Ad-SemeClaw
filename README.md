@@ -39,7 +39,11 @@ Supabase project: gvuuauzsucvhghmpdpxf ("Memory")
 2. **Subscriber Spotlight** is separate from the user's own Projects — it's a promo surface. `spotlight.json` drives it. Square gradient logos + Playfair Display headline. `ttl_days` + `featured_from` control 7-day rotation. `pinned:true` pins forever (Nervix is the anchor).
 3. **Motion** — conic-gradient borders animate on hover, cards lift, icons tilt, entrance staggered via `--delay` custom property.
 4. **Fluid everywhere** — typography + padding + grid gaps use `clamp()` so the UI scales cleanly from 320px phones through 4K.
-5. **Auth** — Supabase JS v2 OAuth → returns to `/advertiser` → session persists in localStorage.
+5. **Auth** — pinned Supabase JS 2.110.8 OAuth → returns to `/advertiser`; every same-origin advertiser API request carries the current session JWT and missing server auth configuration fails closed.
+
+## Verification
+
+Run `node scripts/verify-security.mjs` before every commit. It verifies the mirrored SPA files, JWT transport boundary, untrusted URL/style/profile sinks, pinned browser SDK, and required deployment security headers.
 
 ## Subscriber Spotlight schema (`spotlight.json`)
 
