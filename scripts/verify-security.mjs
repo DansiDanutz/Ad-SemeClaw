@@ -17,6 +17,9 @@ for (const page of pages) {
   require(/headers\.set\(['"]Authorization['"], ['"]Bearer ['"] \+ session\.access_token\)/, "JWT boundary must set Authorization");
   require(/function safeHttpUrl\(/, "untrusted links need an HTTP(S)-only validator");
   require(/if\(!value\) return ['"]#['"]/, "empty URLs must not resolve to the application origin");
+  if (!html.includes("if(!/^https?:\\/\\//i.test(raw)) return '#';")) {
+    failures.push(`${page}: relative and fragment URL sentinels must remain non-navigable`);
+  }
   require(/function safeHexColor\(/, "untrusted style colors need strict validation");
   require(/function renderUserArea\(/, "OAuth profile data must use DOM text/attribute setters");
   reject(/user-area'\)\.innerHTML\s*=\s*`/, "OAuth profile data must not enter innerHTML");

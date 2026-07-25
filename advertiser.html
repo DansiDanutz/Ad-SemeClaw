@@ -2073,8 +2073,10 @@ window.fetch = authenticatedFetch;
 
 function safeHttpUrl(value){
   if(!value) return '#';
+  const raw = String(value).trim();
+  if(!/^https?:\/\//i.test(raw)) return '#';
   try{
-    const url = new URL(String(value || ''), location.origin);
+    const url = new URL(raw);
     return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '#';
   }catch(_){ return '#'; }
 }
