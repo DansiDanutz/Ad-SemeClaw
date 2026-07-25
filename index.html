@@ -2072,6 +2072,7 @@ async function authenticatedFetch(input, init){
 window.fetch = authenticatedFetch;
 
 function safeHttpUrl(value){
+  if(!value) return '#';
   try{
     const url = new URL(String(value || ''), location.origin);
     return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '#';
