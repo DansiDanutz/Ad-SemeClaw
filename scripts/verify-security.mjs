@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 
 const pages = ["index.html", "advertiser.html"];
 const failures = [];
+const supabaseScript = '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8" integrity="sha384-Tve8O+C6PBzsIMK/IRCwHbi8fyEzXIlIs6OfVBZHubplwYhaQF/4Mzxqgg+pp/oy" crossorigin="anonymous"></script>';
 
 for (const page of pages) {
   const html = readFileSync(page, "utf8");
@@ -13,6 +14,9 @@ for (const page of pages) {
   };
 
   require(/@supabase\/supabase-js@2\.110\.8/, "Supabase browser SDK must be version-pinned");
+  if (!html.includes(supabaseScript)) {
+    failures.push(`${page}: pinned Supabase SDK must retain its verified SHA-384 integrity boundary`);
+  }
   require(/function authenticatedFetch\(/, "advertiser API requests need a JWT-aware fetch boundary");
   require(/headers\.set\(['"]Authorization['"], ['"]Bearer ['"] \+ session\.access_token\)/, "JWT boundary must set Authorization");
   require(/function safeHttpUrl\(/, "untrusted links need an HTTP(S)-only validator");
