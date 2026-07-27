@@ -1,0 +1,19 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  security-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          node-version: 22
+      - run: node scripts/verify-security.mjs

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { Script } from "node:vm";
 
 const pages = ["index.html", "advertiser.html"];
 const failures = [];
@@ -31,12 +32,28 @@ for (const page of pages) {
   reject(/Running in demo mode/, "missing auth configuration must fail closed, not expose demo API access");
   reject(/window\.__supa/, "subscription auth must use the initialized Supabase client");
   reject(/trycloudflare\.com|fetchOllamaDraft\(/, "project data must not be sent to a hardcoded third-party model tunnel");
+  reject(/api\.allorigins\.win|function fetchWebpageData\(/, "advertiser URLs must not be fetched from the signed-in browser");
+  for (const match of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      new Script(match[1], { filename: page });
+    } catch (error) {
+      failures.push(`${page}: inline JavaScript does not parse: ${error.message}`);
+    }
+  }
 }
 
 const vercel = JSON.parse(readFileSync("vercel.json", "utf8"));
 const headers = new Map(vercel.headers?.[0]?.headers?.map(({ key, value }) => [key.toLowerCase(), value]));
 for (const name of ["content-security-policy", "permissions-policy", "strict-transport-security"]) {
   if (!headers.has(name)) failures.push(`vercel.json: missing ${name}`);
+}
+if (headers.get("content-security-policy")?.includes("api.allorigins.win")) {
+  failures.push("vercel.json: browser connect policy must not authorize the third-party crawl proxy");
+}
+
+const workflow = readFileSync(".github/workflows/verify.yml", "utf8");
+if (!/actions\/checkout@[0-9a-f]{40}/.test(workflow) || !/actions\/setup-node@[0-9a-f]{40}/.test(workflow)) {
+  failures.push("verify workflow must pin executable actions to immutable revisions");
 }
 
 if (readFileSync(pages[0], "utf8") !== readFileSync(pages[1], "utf8")) {

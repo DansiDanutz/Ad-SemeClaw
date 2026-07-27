@@ -1939,12 +1939,12 @@ textarea{min-height:80px;resize:vertical}
     <div class="gen-orb"><div class="gen-orb-core">✨</div></div>
     <div>
       <div class="gen-title" id="gen-title">Composing your card…</div>
-      <div class="gen-sub" id="gen-sub">We read your inputs, fetch your repo + site, and build a 30-second animated ad.</div>
+      <div class="gen-sub" id="gen-sub">We read your inputs, inspect your public repo, and build a 30-second animated ad.</div>
     </div>
     <div class="gen-steps" id="gen-steps">
       <div class="gen-step" data-step="1"><span class="gen-tick" data-n="1"></span><span>Reading your project inputs</span></div>
       <div class="gen-step" data-step="2"><span class="gen-tick" data-n="2"></span><span>Analyzing GitHub repo</span></div>
-      <div class="gen-step" data-step="3"><span class="gen-tick" data-n="3"></span><span>Crawling your website</span></div>
+      <div class="gen-step" data-step="3"><span class="gen-tick" data-n="3"></span><span>Preparing website context</span></div>
       <div class="gen-step" data-step="4"><span class="gen-tick" data-n="4"></span><span>Extracting key phrases</span></div>
       <div class="gen-step" data-step="5"><span class="gen-tick" data-n="5"></span><span>Composing hook + headline</span></div>
       <div class="gen-step" data-step="6"><span class="gen-tick" data-n="6"></span><span>Rendering animated card</span></div>
@@ -3054,7 +3054,7 @@ async function submitProject(e){
 // ============================================================
 // ============================================================
 // CARD GENERATION — research-first pipeline with real fetching
-// Stages do actual work: GitHub API → webpage crawl → LLM generation
+// Stages keep browser research on explicitly public GitHub endpoints.
 // ============================================================
 
 async function fetchGitHubData(githubUrl){
@@ -3093,50 +3093,7 @@ async function fetchGitHubData(githubUrl){
   }
 }
 
-async function fetchWebpageData(url){
-  try{
-    let html = '';
-    try {
-      const directRes = await fetch(url, { mode: 'cors', signal: AbortSignal.timeout(5000) });
-      if(directRes.ok) html = await directRes.text();
-    } catch(e) { /* CORS blocked, try proxy */ }
-
-    if(!html){
-      const proxyRes = await fetch(
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        { signal: AbortSignal.timeout(10000) }
-      );
-      if(!proxyRes.ok) return null;
-      html = await proxyRes.text();
-    }
-
-    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-    const title = titleMatch ? titleMatch[1].trim() : '';
-
-    const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i)
-                   || html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']description["']/i)
-                   || html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']*)["']/i);
-    const metaDescription = descMatch ? descMatch[1].trim() : '';
-
-    const keywordsMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']*)["']/i);
-    const keywords = keywordsMatch ? keywordsMatch[1].trim() : '';
-
-    const text = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 5000);
-
-    return { title, metaDescription, keywords, text };
-  }catch(e){
-    console.warn('[gen] Webpage fetch failed:', e.message);
-    return null;
-  }
-}
-
-function analyzeSources(project, githubData, webpageData){
+function analyzeSources(project, githubData){
   const parts = [];
   if(githubData?.meta){
     const m = githubData.meta;
@@ -3149,14 +3106,6 @@ function analyzeSources(project, githubData, webpageData){
   if(githubData?.readme){
     const firstPara = githubData.readme.split('\n\n')[0].replace(/^#+\s*/, '').trim();
     parts.push(`README: ${firstPara.slice(0, 800)}`);
-  }
-  if(webpageData?.title) parts.push(`Website title: ${webpageData.title}`);
-  if(webpageData?.metaDescription) parts.push(`Website meta description: ${webpageData.metaDescription}`);
-  if(webpageData?.keywords) parts.push(`Website keywords: ${webpageData.keywords}`);
-  if(webpageData?.text){
-    const sentences = webpageData.text.match(/[^.!?]+[.!?]+/g) || [];
-    const excerpt = sentences.slice(0, 3).join(' ').trim();
-    if(excerpt) parts.push(`Website content excerpt: ${excerpt.slice(0, 600)}`);
   }
   if(project.ad_goal) parts.push(`Ad goal: ${project.ad_goal}`);
   if(project.target_audience) parts.push(`Target audience: ${project.target_audience}`);
@@ -3230,7 +3179,7 @@ function resetGenerationUI(){
   const title = document.getElementById('gen-title');
   const sub = document.getElementById('gen-sub');
   if(title) title.textContent = 'Composing your card...';
-  if(sub) sub.textContent = 'We read your inputs, fetch your repo + site, and build a 30-second animated ad.';
+  if(sub) sub.textContent = 'We read your inputs, inspect your public repo, and build a 30-second animated ad.';
 }
 
 async function generate(projectId){
@@ -3263,15 +3212,13 @@ async function generate(projectId){
     return await fetchGitHubData(project.github_url);
   });
 
-  // Stage 3: Fetch webpage
-  const webpageData = await stage(2, project.webpage_url ? 'Crawling your website' : 'Crawling any linked site', async () => {
-    if(!project.webpage_url) return null;
-    return await fetchWebpageData(project.webpage_url);
-  });
+  // Stage 3: Keep advertiser-provided URLs as display data. The backend owns
+  // any network research so the signed-in browser never probes arbitrary hosts.
+  await stage(2, 'Keeping website access server-side', async () => null);
 
   // Stage 4: Extract key phrases
   const analysis = await stage(3, 'Extracting key phrases', async () => {
-    return analyzeSources(project, githubData, webpageData);
+    return analyzeSources(project, githubData);
   });
 
   // Stage 5: Generate draft
